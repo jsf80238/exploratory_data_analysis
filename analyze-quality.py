@@ -155,9 +155,9 @@ if host_name:
                 query += f" TABLESAMPLE SYSTEM ({sample_percent})"
             logger.info(f'Executing "{query}" ...')
             input_df = pd.read_sql(query, connection)
-    elif "oracle" in jdbc_path.name:
-        class_name = 'org.postgresql.Driver'
-        url = f"jdbc:postgresql://{host_name}:{port_number}/{database_name}"
+    elif "ojdbc" in jdbc_path.name:
+        class_name = 'oracle.jdbc.OracleDriver'
+        url = f"jdbc:oracle:thin:@//{host_name}:{port_number}/{database_name}"
         with jdbc.connect(class_name, url, [user_name, password], jdbc_jar_file) as connection:
             logger.info(f"Connected to '{database_name}'.")
             query = f"select * from {input_path}"
