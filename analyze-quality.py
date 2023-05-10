@@ -69,24 +69,41 @@ ANALYSIS_LIST = (
     STDDEV,
 )
 
+
+
 parser = argparse.ArgumentParser(
-    description='Profile the data in a CSV file.',
+    description='Profile the data in a CSV file or database table/view. Supported JDBC methods are: orathin-service, postgresql.',
     epilog='Generates an analysis consisting of an Excel workbook and (optionally) one or more images.'
 )
-parser.add_argument('input', help="/path/to/file.csv")
+parser.add_argument('input',
+                    metavar="/path/to/file.csv | table/view",
+                    help="If a file no connect string required. If a table/view it may need to be fully qualified as database.schema.name depending on the privileges of the user.")
+parser.add_argument('--db-host-name',
+                    metavar="HOSTNAME/IPADDR")
+parser.add_argument('--db-port-number',
+                    metavar="NUM")
+parser.add_argument('--db-name',
+                    metavar="MY_DATABASE")
+parser.add_argument('--db-user-name',
+                    metavar="MY_USER")
+parser.add_argument('--db-password',
+                    metavar="MY_PASSWORD")
+parser.add_argument('--jdbc-path',
+                    metavar="/path/to/file.jar",
+                    help="https://www.codejava.net/java-se/jdbc/jdbc-driver-library-download.")
 parser.add_argument('--header',
                     type=int,
                     metavar="NUM",
-                    help="Specify the number of rows to skip for header information.")
+                    help="Specify the number of rows to skip for header information. Ignored when getting data from a database.")
 parser.add_argument('--max-detail-values',
                     type=int,
-                    metavar="INT",
+                    metavar="NUM",
                     action=range_action(1, 1e99),
                     default=DEFAULT_MAX_DETAIL_VALUES,
                     help=f"Produce this many of the top/bottom value occurrences, default is {DEFAULT_MAX_DETAIL_VALUES}.")
 parser.add_argument('--sample-percent',
                     type=int,
-                    metavar="INT",
+                    metavar="NUM",
                     action=range_action(1, 99),
                     help=f"Randomly choose this percentage of the input data and ignore the remainder.")
 parser.add_argument('--no-plot', action='store_true', help="Don't generate plots.")
@@ -95,7 +112,17 @@ logging_group.add_argument('-v', '--verbose', action='store_true')
 logging_group.add_argument('-t', '--terse', action='store_true')
 args = parser.parse_args()
 input_path = pathlib.Path(args.input)
+host_name = args.db_host_name
+port_number = args.db_port_number
+database_name = args.db_name
+user_name = args.db_user_name
+password = args.db_password
+jdbc_jar_file = args.jdbc_path
 max_detail_values = args.max_detail_values
+sample_percent = args.sample_percent
+
+if host_name and not (port_number and database_name and user_name and password):
+    parser.error("Connecting to a database requires: --db-host-name, --db-port-number, --db-name, --db-user-name, --db-password, --jdbc_path")
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -110,34 +137,66 @@ elif args.terse:
 else:
     handler.setLevel(logging.INFO)
 
-if not input_path.exists():
-    logger.critical(f"No such file '{args.input}'.")
-    sys.exit(1)
-else:
-    # If not producing plots generate an Excel file with the same name as the input
-    # If producing plots generate a .zip file with the same name as the input
-    if args.no_plot:
-        summary_output_path = (input_path.parent / input_path.stem).with_suffix(".xlsx")
+if host_name:
+    # User wants to get the data from a database table or view
+    import jaydebeapi as jdbc
+    # Construct connect string based on database type
+    jdbc_path = pathlib.Path(jdbc_jar_file)
+    if not jdbc_path.exists():
+        logger.critical(f"Cannot find JDBC driver path '{jdbc_jar_file}'.")
+        sys.exit(1)
+    if "postgres" in jdbc_path.name:
+        class_name = 'org.postgresql.Driver'
+        url = f"jdbc:postgresql://{host_name}:{port_number}/{database_name}"
+        with jdbc.connect(class_name, url, [user_name, password], jdbc_jar_file) as connection:
+            logger.info(f"Connected to '{database_name}'.")
+            query = f"select * from {input_path}"
+            if sample_percent:
+                query += f" TABLESAMPLE SYSTEM ({sample_percent})"
+            logger.info(f'Executing "{query}" ...')
+            input_df = pd.read_sql(query, connection)
+    elif "oracle" in jdbc_path.name:
+        class_name = 'org.postgresql.Driver'
+        url = f"jdbc:postgresql://{host_name}:{port_number}/{database_name}"
+        with jdbc.connect(class_name, url, [user_name, password], jdbc_jar_file) as connection:
+            logger.info(f"Connected to '{database_name}'.")
+            query = f"select * from {input_path}"
+            if sample_percent:
+                query += f" sample({sample_percent})"
+            logger.info(f'Executing "{query}" ...')
+            input_df = pd.read_sql(query, connection)
     else:
-        tempdir = tempfile.TemporaryDirectory()
-        tempdir_path = pathlib.Path(tempdir.name)
-        summary_output_path = tempdir_path / "summary.xlsx"
-
-logger.info(f"Reading from '{input_path}' ...")
-
-skip_list = list()
-if args.sample_percent:
-    header_size = args.header or 1
-    number_of_rows = sum(1 for line in open(input_path)) - header_size
-    sample_size = int(args.sample_percent * number_of_rows / 100)
-    skip_list = sorted(random.sample(range(header_size, number_of_rows+1), number_of_rows-sample_size))
-
-if args.header:
-    input_df = pd.read_csv(input_path, skiprows=skip_list, header=args.header)
+        logger.critical(f"Only Postgresql and Oracle supported.")
+        sys.exit(1)
 else:
-    input_df = pd.read_csv(input_path, skiprows=skip_list)
-    # Next line: it's useful for debugging to focus on a single column
-    # input_df = pd.read_csv(input_path, skiprows=skip_list, usecols=['activity_date'])
+    # Input is coming from a file
+    if not input_path.exists():
+        logger.critical(f"No such file '{args.input}' and database connection arguments not provided.")
+        sys.exit(1)
+    logger.info(f"Reading from '{input_path}' ...")
+    skip_list = list()
+    # Support sampling
+    if sample_percent:
+        header_size = args.header or 1
+        number_of_rows = sum(1 for line in open(input_path)) - header_size
+        sample_size = int(sample_percent * number_of_rows / 100)
+        skip_list = sorted(random.sample(range(header_size, number_of_rows + 1), number_of_rows - sample_size))
+    if args.header:
+        input_df = pd.read_csv(input_path, skiprows=skip_list, header=args.header)
+    else:
+        input_df = pd.read_csv(input_path, skiprows=skip_list)
+        # Next line: it's useful for debugging to focus on a single column
+        # input_df = pd.read_csv(input_path, skiprows=skip_list, usecols=['activity_date'])
+
+# If not producing plots generate an Excel file with the same name as the input
+# If producing plots generate a .zip file with the same name as the input
+if args.no_plot:
+    summary_output_path = (input_path.parent / input_path.stem).with_suffix(".xlsx")
+else:
+    tempdir = tempfile.TemporaryDirectory()
+    tempdir_path = pathlib.Path(tempdir.name)
+    summary_output_path = tempdir_path / "summary.xlsx"
+
 
 
 def parse_date(date):
@@ -212,6 +271,9 @@ for label in input_df.columns:
     row_dict = dict.fromkeys(ANALYSIS_LIST)
     # Row count
     row_count = data.size
+    if not row_count:
+        logger.warning("No data.")
+        sys.exit()
     row_dict[ROW_COUNT] = row_count
     # Null
     null_count = row_count - data.count()

@@ -2,6 +2,8 @@ argparse-range==0.1.2
 contourpy==1.0.7
 cycler==0.11.0
 fonttools==4.39.0
+JayDeBeApi==1.2.3
+JPype1==1.4.1
 kiwisolver==1.4.4
 matplotlib==3.7.1
 numpy==1.24.2
