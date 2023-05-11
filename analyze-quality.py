@@ -1,7 +1,7 @@
 import argparse
 import logging
 import os
-import pathlib
+from pathlib import Path
 import random
 import sys
 import tempfile
@@ -21,6 +21,9 @@ MAX_SHEET_NAME_LENGTH = 31  # Excel limitation
 OBJECT = "object"
 VALUE, COUNT = "Value", "Count"
 IMAGES = "Images"  # directory in zip file containing the images
+EXCEL_EXTENSION = ".xlsx"
+ZIP_EXTENSION = ".zip"
+SUMMARY = "summary"
 
 # Don't plot distributions if there are fewer than this number of distinct values
 DISTRIBUTION_PLOT_MIN_VALUES = 6
@@ -78,16 +81,11 @@ parser = argparse.ArgumentParser(
 parser.add_argument('input',
                     metavar="/path/to/file.csv | table/view",
                     help="If a file no connect string required. If a table/view it may need to be fully qualified as database.schema.name depending on the privileges of the user.")
-parser.add_argument('--db-host-name',
-                    metavar="HOSTNAME/IPADDR")
-parser.add_argument('--db-port-number',
-                    metavar="NUM")
-parser.add_argument('--db-name',
-                    metavar="MY_DATABASE")
-parser.add_argument('--db-user-name',
-                    metavar="MY_USER")
-parser.add_argument('--db-password',
-                    metavar="MY_PASSWORD")
+parser.add_argument('--db-host-name', metavar="HOSTNAME/IPADDR")
+parser.add_argument('--db-port-number', metavar="NUM")
+parser.add_argument('--db-name', metavar="MY_DATABASE")
+parser.add_argument('--db-user-name', metavar="MY_USER")
+parser.add_argument('--db-password', metavar="MY_PASSWORD")
 parser.add_argument('--jdbc-path',
                     metavar="/path/to/file.jar",
                     help="https://www.codejava.net/java-se/jdbc/jdbc-driver-library-download.")
@@ -107,11 +105,14 @@ parser.add_argument('--sample-percent',
                     action=range_action(1, 99),
                     help=f"Randomly choose this percentage of the input data and ignore the remainder.")
 parser.add_argument('--no-plot', action='store_true', help="Don't generate plots.")
+parser.add_argument('--output',
+                    metavar="FILENAME_OR_DIRECTORY",
+                    help="If a directory the output will be written to the current directory and mirror the input file/table/view name.")
 logging_group = parser.add_mutually_exclusive_group()
 logging_group.add_argument('-v', '--verbose', action='store_true')
 logging_group.add_argument('-t', '--terse', action='store_true')
 args = parser.parse_args()
-input_path = pathlib.Path(args.input)
+input_path = Path(args.input)
 host_name = args.db_host_name
 port_number = args.db_port_number
 database_name = args.db_name
@@ -120,6 +121,10 @@ password = args.db_password
 jdbc_jar_file = args.jdbc_path
 max_detail_values = args.max_detail_values
 sample_percent = args.sample_percent
+if args.output:
+    user_requested_output = Path(args.output)
+else:
+    user_requested_output = None
 
 if host_name and not (port_number and database_name and user_name and password):
     parser.error("Connecting to a database requires: --db-host-name, --db-port-number, --db-name, --db-user-name, --db-password, --jdbc_path")
@@ -137,11 +142,85 @@ elif args.terse:
 else:
     handler.setLevel(logging.INFO)
 
+"""
+Here we name the output file and if the user requests a target verify the request can be honored.
+There are 4 possibilities:
+1. Plots ok, and no output file/directory specified
+2. Plots ok, and output file/directory specified.
+3. No plots requested, and no output file/directory specified.
+4. No plots requested, and output file/directory specified.
+"""
+
+if not args.no_plot and not user_requested_output:
+    # 1. Produce a zip file in the same directory as the input, or the current directory if a database source
+    tempdir = tempfile.TemporaryDirectory()
+    tempdir_path = Path(tempdir.name)
+    summary_output_path = (tempdir_path / SUMMARY).with_suffix(EXCEL_EXTENSION)
+    if host_name:
+        # Database source
+        output_file = (Path.cwd() / input_path.stem).with_suffix(ZIP_EXTENSION)
+    else:
+        output_file = (input_path.parent / input_path.stem).with_suffix(ZIP_EXTENSION)
+    logger.debug(f"Plots OK and target not specified, writing summary to '{summary_output_path}' and zip to '{output_file}'.")
+elif not args.no_plot and user_requested_output:
+    # 2. Produce a zip file in the specified directory, or with the specified path
+    tempdir = tempfile.TemporaryDirectory()
+    tempdir_path = Path(tempdir.name)
+    summary_output_path = (tempdir_path / SUMMARY).with_suffix(EXCEL_EXTENSION)
+    if user_requested_output.exists():
+        if user_requested_output.is_dir():
+            logger.info(f"'{user_requested_output}' is an existing directory.")
+            output_file = (user_requested_output / input_path.stem).with_suffix(ZIP_EXTENSION)
+        else:
+            logger.info(f"'{user_requested_output}' is an existing file.")
+            output_file = user_requested_output
+    else:
+        # File/directory does not exist
+        # First verify its parent exists
+        # Then if it ends with xlsx or zip assume a file definition, else directory definition
+        if not user_requested_output.parent.exists():
+            logger.critical(f"Target directory '{user_requested_output.parent}' does not exist.")
+            sys.exit(1)
+        if user_requested_output.suffix in (EXCEL_EXTENSION, ZIP_EXTENSION):
+            output_file = user_requested_output
+        else:
+            output_file = (user_requested_output / input_path.stem).with_suffix(ZIP_EXTENSION)
+    logger.debug(f"Plots OK and target specified, writing summary to '{summary_output_path}' and zip to '{output_file}'.")
+elif args.no_plot and not user_requested_output:
+    # 3. Produce a xlsx file in the same directory as the input, or the current directory if a database source
+    summary_output_path = (input_path.parent / input_path.stem).with_suffix(EXCEL_EXTENSION)
+    logger.debug(f"No plots and target not specified, writing summary to '{summary_output_path}'.")
+elif args.no_plot and user_requested_output:
+    # 4. Produce a xlsx file in the specified directory, or with the specified path
+    if user_requested_output.exists():
+        if user_requested_output.is_dir():
+            logger.info(f"'{user_requested_output}' is an existing directory.")
+            summary_output_path = (user_requested_output / input_path.stem).with_suffix(EXCEL_EXTENSION)
+        else:
+            logger.info(f"'{user_requested_output}' is an existing file.")
+            summary_output_path = user_requested_output
+    else:
+        # File/directory does not exist
+        # First verify its parent exists
+        # Then, if it ends with xlsx or zip assume a file definition, else directory definition
+        if not user_requested_output.parent.exists():
+            logger.critical(f"Target directory '{user_requested_output.parent}' does not exist.")
+            sys.exit(1)
+        if user_requested_output.suffix in (EXCEL_EXTENSION, ZIP_EXTENSION):
+            summary_output_path = user_requested_output
+        else:
+            summary_output_path = (user_requested_output / input_path.stem).with_suffix(EXCEL_EXTENSION)
+    logger.debug(f"No plots and target specified, writing summary to '{summary_output_path}'.")
+else:
+    raise("Programming error.")
+
+
+# Now, read the data
 if host_name:
     # User wants to get the data from a database table or view
     import jaydebeapi as jdbc
     # Construct connect string based on database type
-    jdbc_path = pathlib.Path(jdbc_jar_file)
+    jdbc_path = Path(jdbc_jar_file)
     if not jdbc_path.exists():
         logger.critical(f"Cannot find JDBC driver path '{jdbc_jar_file}'.")
         sys.exit(1)
@@ -187,16 +266,6 @@ else:
         input_df = pd.read_csv(input_path, skiprows=skip_list)
         # Next line: it's useful for debugging to focus on a single column
         # input_df = pd.read_csv(input_path, skiprows=skip_list, usecols=['activity_date'])
-
-# If not producing plots generate an Excel file with the same name as the input
-# If producing plots generate a .zip file with the same name as the input
-if args.no_plot:
-    summary_output_path = (input_path.parent / input_path.stem).with_suffix(".xlsx")
-else:
-    tempdir = tempfile.TemporaryDirectory()
-    tempdir_path = pathlib.Path(tempdir.name)
-    summary_output_path = tempdir_path / "summary.xlsx"
-
 
 
 def parse_date(date):
@@ -261,6 +330,7 @@ def make_categorical_plot_data(series, max_distinct_values=CATEGORICAL_PLOT_MAX_
     return pd.DataFrame({VALUE: plot_data.index, COUNT: plot_data.values})
 
 
+# Data has been read into input_df, now process it
 summary_dict = dict()  # To be converted into the summary worksheet
 detail_dict = dict()  # Each element to be converted into a detail worksheet
 for label in input_df.columns:
@@ -357,7 +427,6 @@ if not args.no_plot:
     # String columns will get a categorical plot, if we calculate such a plot will be useful
     # Numeric and date columns will get a distribution plot, if we calculate such a plot will be useful,
     # else a categorical plot
-    output_file = (input_path.parent / input_path.stem).with_suffix(".zip")
     with zipfile.ZipFile(output_file, 'w') as myzip:
         # Add summary file
         myzip.write(summary_output_path, arcname=summary_output_path.name)
