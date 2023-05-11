@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import re
 from pathlib import Path
 import random
 import sys
@@ -12,19 +13,24 @@ from argparse_range import range_action
 import pandas as pd
 from dateutil.parser import parse
 import numpy as np
+import openpyxl
+from openpyxl.styles import Border, Side, Alignment, Font, borders
 import seaborn as sns
 
-DEFAULT_MAX_DETAIL_VALUES = 35
 UP_ARROW = "⤒"
 DOWN_ARROW = "⤓"
+HORIZONTAL_BAR = "―"
+DOTTED_CROSS = "⁜"
+FULL_BLOCK = "█"
 MAX_SHEET_NAME_LENGTH = 31  # Excel limitation
+ROUNDING = 1  # 5.4% for example
 OBJECT = "object"
 VALUE, COUNT = "Value", "Count"
-IMAGES = "Images"  # directory in zip file containing the images
-EXCEL_EXTENSION = ".xlsx"
-ZIP_EXTENSION = ".zip"
-SUMMARY = "summary"
 
+# When producing a list of detail values and their frequency of occurrence
+DEFAULT_MAX_DETAIL_VALUES = 35
+# When analyzing the patterns of a string column
+DEFAULT_MAX_PATTERN_LENGTH = 50
 # Don't plot distributions if there are fewer than this number of distinct values
 DISTRIBUTION_PLOT_MIN_VALUES = 6
 # Categorical plots should have no more than this number of distinct values
@@ -99,15 +105,18 @@ parser.add_argument('--max-detail-values',
                     action=range_action(1, 1e99),
                     default=DEFAULT_MAX_DETAIL_VALUES,
                     help=f"Produce this many of the top/bottom value occurrences, default is {DEFAULT_MAX_DETAIL_VALUES}.")
+parser.add_argument('--max-pattern-length',
+                    type=int,
+                    metavar="NUM",
+                    action=range_action(1, 1e99),
+                    default=DEFAULT_MAX_PATTERN_LENGTH,
+                    help=f"When segregating strings into patterns leave untouched strings of length greater than this, default is {DEFAULT_MAX_PATTERN_LENGTH}.")
 parser.add_argument('--sample-percent',
                     type=int,
                     metavar="NUM",
                     action=range_action(1, 99),
                     help=f"Randomly choose this percentage of the input data and ignore the remainder.")
-parser.add_argument('--no-plot', action='store_true', help="Don't generate plots.")
-parser.add_argument('--output',
-                    metavar="FILENAME_OR_DIRECTORY",
-                    help="If a directory the output will be written to the current directory and mirror the input file/table/view name.")
+parser.add_argument('--output-dir', metavar="/path/to/dir", default=Path.cwd(), help="Default is the current directory.")
 logging_group = parser.add_mutually_exclusive_group()
 logging_group.add_argument('-v', '--verbose', action='store_true')
 logging_group.add_argument('-t', '--terse', action='store_true')
@@ -120,14 +129,14 @@ user_name = args.db_user_name
 password = args.db_password
 jdbc_jar_file = args.jdbc_path
 max_detail_values = args.max_detail_values
+max_pattern_length = args.max_pattern_length
 sample_percent = args.sample_percent
-if args.output:
-    user_requested_output = Path(args.output)
-else:
-    user_requested_output = None
+output_dir = Path(args.output_dir)
 
 if host_name and not (port_number and database_name and user_name and password):
     parser.error("Connecting to a database requires: --db-host-name, --db-port-number, --db-name, --db-user-name, --db-password, --jdbc_path")
+if not output_dir.exists():
+    parser.error("Directory '{output_dir}' does not exist.")
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -141,78 +150,6 @@ elif args.terse:
     handler.setLevel(logging.WARNING)
 else:
     handler.setLevel(logging.INFO)
-
-"""
-Here we name the output file and if the user requests a target verify the request can be honored.
-There are 4 possibilities:
-1. Plots ok, and no output file/directory specified
-2. Plots ok, and output file/directory specified.
-3. No plots requested, and no output file/directory specified.
-4. No plots requested, and output file/directory specified.
-"""
-
-if not args.no_plot and not user_requested_output:
-    # 1. Produce a zip file in the same directory as the input, or the current directory if a database source
-    tempdir = tempfile.TemporaryDirectory()
-    tempdir_path = Path(tempdir.name)
-    summary_output_path = (tempdir_path / SUMMARY).with_suffix(EXCEL_EXTENSION)
-    if host_name:
-        # Database source
-        output_file = (Path.cwd() / input_path.stem).with_suffix(ZIP_EXTENSION)
-    else:
-        output_file = (input_path.parent / input_path.stem).with_suffix(ZIP_EXTENSION)
-    logger.debug(f"Plots OK and target not specified, writing summary to '{summary_output_path}' and zip to '{output_file}'.")
-elif not args.no_plot and user_requested_output:
-    # 2. Produce a zip file in the specified directory, or with the specified path
-    tempdir = tempfile.TemporaryDirectory()
-    tempdir_path = Path(tempdir.name)
-    summary_output_path = (tempdir_path / SUMMARY).with_suffix(EXCEL_EXTENSION)
-    if user_requested_output.exists():
-        if user_requested_output.is_dir():
-            logger.info(f"'{user_requested_output}' is an existing directory.")
-            output_file = (user_requested_output / input_path.stem).with_suffix(ZIP_EXTENSION)
-        else:
-            logger.info(f"'{user_requested_output}' is an existing file.")
-            output_file = user_requested_output
-    else:
-        # File/directory does not exist
-        # First verify its parent exists
-        # Then if it ends with xlsx or zip assume a file definition, else directory definition
-        if not user_requested_output.parent.exists():
-            logger.critical(f"Target directory '{user_requested_output.parent}' does not exist.")
-            sys.exit(1)
-        if user_requested_output.suffix in (EXCEL_EXTENSION, ZIP_EXTENSION):
-            output_file = user_requested_output
-        else:
-            output_file = (user_requested_output / input_path.stem).with_suffix(ZIP_EXTENSION)
-    logger.debug(f"Plots OK and target specified, writing summary to '{summary_output_path}' and zip to '{output_file}'.")
-elif args.no_plot and not user_requested_output:
-    # 3. Produce a xlsx file in the same directory as the input, or the current directory if a database source
-    summary_output_path = (input_path.parent / input_path.stem).with_suffix(EXCEL_EXTENSION)
-    logger.debug(f"No plots and target not specified, writing summary to '{summary_output_path}'.")
-elif args.no_plot and user_requested_output:
-    # 4. Produce a xlsx file in the specified directory, or with the specified path
-    if user_requested_output.exists():
-        if user_requested_output.is_dir():
-            logger.info(f"'{user_requested_output}' is an existing directory.")
-            summary_output_path = (user_requested_output / input_path.stem).with_suffix(EXCEL_EXTENSION)
-        else:
-            logger.info(f"'{user_requested_output}' is an existing file.")
-            summary_output_path = user_requested_output
-    else:
-        # File/directory does not exist
-        # First verify its parent exists
-        # Then, if it ends with xlsx or zip assume a file definition, else directory definition
-        if not user_requested_output.parent.exists():
-            logger.critical(f"Target directory '{user_requested_output.parent}' does not exist.")
-            sys.exit(1)
-        if user_requested_output.suffix in (EXCEL_EXTENSION, ZIP_EXTENSION):
-            summary_output_path = user_requested_output
-        else:
-            summary_output_path = (user_requested_output / input_path.stem).with_suffix(EXCEL_EXTENSION)
-    logger.debug(f"No plots and target specified, writing summary to '{summary_output_path}'.")
-else:
-    raise("Programming error.")
 
 
 # Now, read the data
@@ -313,26 +250,36 @@ def set_best_type(series):
     return series
 
 
-def make_categorical_plot_data(series, max_distinct_values=CATEGORICAL_PLOT_MAX_VALUES):
+def get_pattern(s, max_length=max_pattern_length):
     """
-    :param series:
-    :return: a dataframe (columns "Value", "Count") with a useful number of categories
+    Examples:
+    "hi joe." --> "CC_CCC."
+    "hello4abigail" --> "C(5)9C(7)"
+    :param s: string data
+    :return: a pattern analysis, for example abc-123 becomes CCC-999
     """
-    plot_data = series.value_counts(normalize=False, ascending=False)
-    if len(plot_data) > max_distinct_values:
-        # We have more than a useful number of distinct values
-        # Pick the top N and lump the others under "Other"
-        top_value_series = series.value_counts()[:CATEGORICAL_PLOT_MAX_VALUES]
-        top_value_sum = top_value_series.sum()
-        other_sum = data.size - top_value_sum
-        other_series = pd.Series(data={OTHER: other_sum})
-        plot_data = pd.concat([top_value_series, other_series])
-    return pd.DataFrame({VALUE: plot_data.index, COUNT: plot_data.values})
+    if len(s) > max_length:
+        return s
+    s = re.sub("[a-zA-Z]", "C", s)  # Replace letters with 'C'
+    s = re.sub(r"\d", "9", s)  # Replace numbers with '9'
+    s = re.sub(r"\s+", "_", s)  # Replace whitespace with '_'
+    # Group long sequences of letters or numbers
+    # See https://stackoverflow.com/questions/76230795/replace-characters-with-a-count-of-characters
+    # The number below (2) means sequences of 3 or more will be grouped
+    s = re.sub(r'(.)\1{2,}', lambda m: f'{m.group(1)}({len(m.group())})', s)
+    return s
 
 
 # Data has been read into input_df, now process it
+# To temporarily hold distribution plots
+tempdir = tempfile.TemporaryDirectory()
+tempdir_path = Path(tempdir.name)
+# To keep track of which columns have distribution plots
+distribution_plot_list = list()
+
 summary_dict = dict()  # To be converted into the summary worksheet
 detail_dict = dict()  # Each element to be converted into a detail worksheet
+pattern_dict = dict()  # For each string column calculate the frequency of patterns
 for label in input_df.columns:
     logger.info(f"Working on column '{label}' ...")
     input_df[label] = set_best_type(input_df[label])
@@ -349,21 +296,18 @@ for label in input_df.columns:
     null_count = row_count - data.count()
     row_dict[NULL_COUNT] = null_count
     # Null%
-    row_dict[NULL_PERCENT] = 100 * null_count / row_count
+    row_dict[NULL_PERCENT] = round(100 * null_count / row_count, ROUNDING)
     # Unique
     unique_count = len(data.unique())
     row_dict[UNIQUE_COUNT] = unique_count
     # Unique%
-    row_dict[UNIQUE_PERCENT] = 100 * unique_count / row_count
-
-    # Detail dataframe
-    detail_df = pd.DataFrame()
+    row_dict[UNIQUE_PERCENT] = round(100 * unique_count / row_count, ROUNDING)
 
     if null_count != row_count:
         # Most common (mode)
         row_dict[MOST_COMMON] = list(data.mode().values)[0]
         # Most common%
-        row_dict[MOST_COMMON_PERCENT] = 100 * list(data.value_counts())[0] / row_count
+        row_dict[MOST_COMMON_PERCENT] = round(100 * list(data.value_counts())[0] / row_count, ROUNDING)
 
         if data.dtype == OBJECT:
             # Largest & smallest
@@ -388,84 +332,111 @@ for label in input_df.columns:
         # Value counts
         # Collect no more than number of values available or what was given on the command-line
         # whichever is less
+        detail_df = pd.DataFrame()
         max_length = min(max_detail_values, len(data.value_counts(dropna=False)))
         # Create 3-column ascending visual
         detail_df["rank " + DOWN_ARROW] = list(range(1, max_length + 1))
         detail_df["value " + DOWN_ARROW] = list(data.value_counts(dropna=False).index)[:max_length]
         percent_total_list = list(data.value_counts(dropna=False, normalize=True))[:max_length]
-        detail_df["%total " + DOWN_ARROW] = [x*100 for x in percent_total_list]
-        # Visual spacing
-        detail_df[" "] = [None] * max_length
-        # Create 3-column descending visual
-        last_rank = len(data.value_counts(dropna=False))
-        detail_df["rank " + UP_ARROW] = list(range(last_rank, last_rank - max_length, -1))
-        detail_df["value " + UP_ARROW] = list(data.value_counts(ascending=True, dropna=False).index)[:max_length]
-        percent_total_list = list(data.value_counts(ascending=True, dropna=False, normalize=True))[:max_length]
-        detail_df["%total " + UP_ARROW] = [x*100 for x in percent_total_list]
+        detail_df["%total " + DOWN_ARROW] = [round(x*100, ROUNDING) for x in percent_total_list]
     else:
         logger.info(f"Column is empty.")
 
     summary_dict[label] = row_dict
     detail_dict[label] = detail_df
 
-# Convert the summary_dict dictionary of dictionaries to a DataFrame
-result_df = pd.DataFrame.from_dict(summary_dict, orient='index')
-# And write it to a worksheet
-logger.info("Writing summary ...")
-writer = pd.ExcelWriter(summary_output_path, engine='xlsxwriter')
-result_df.to_excel(writer, sheet_name="Summary")
-# And generate a detail sheet for each column
-for label, detail_df in detail_dict.items():
-    logger.info(f"Writing detail for column '{label}' ...")
-    detail_df.to_excel(writer, index=False, sheet_name=truncate_string(label+" detail", MAX_SHEET_NAME_LENGTH))
-writer.close()
-logger.info(f"Wrote {os.stat(summary_output_path).st_size} bytes to '{summary_output_path}'.")
-
-# Maybe produce plots
-if not args.no_plot:
-    # Iterate over the columns
-    # String columns will get a categorical plot, if we calculate such a plot will be useful
-    # Numeric and date columns will get a distribution plot, if we calculate such a plot will be useful,
-    # else a categorical plot
-    with zipfile.ZipFile(output_file, 'w') as myzip:
-        # Add summary file
-        myzip.write(summary_output_path, arcname=summary_output_path.name)
-        # Write images into a directory
-        myzip.mkdir(IMAGES)
-
+    # For string columns produce a pattern analysis
+    # For numeric and datetime columns produce a distribution plot
+    if data.dtype == OBJECT:  # string data
+        pattern_df = pd.DataFrame()
+        pattern_data = data.apply(get_pattern)
+        pattern_analysis = pattern_data.value_counts(normalize=True)
+        max_length = min(max_detail_values, len(pattern_data.value_counts(dropna=False)))
+        pattern_df["rank " + DOWN_ARROW] = list(range(1, max_length + 1))
+        pattern_df["pattern " + DOWN_ARROW] = list(pattern_data.value_counts(dropna=False).index)[:max_length]
+        percent_total_list = list(pattern_data.value_counts(dropna=False, normalize=True))[:max_length]
+        pattern_df["%total " + DOWN_ARROW] = [round(x*100, ROUNDING) for x in percent_total_list]
+        pattern_dict[label] = pattern_df
+    else:  # Numeric/datetime data
         sns.set_theme()
         sns.set(font_scale=PLOT_FONT_SCALE)
-
-        for label in input_df.columns:
-            logger.info(f"Examining column '{label}' for plotting ...")
-            data = input_df[label]
-            # Data type and the number and distribution values will influence what type of plot we generate
-            if data.dtype == OBJECT:  # string data
-                logger.debug("Creating a categorical plot ...")
-                plot_df = make_categorical_plot_data(data)
-                g = sns.catplot(data=plot_df, x=VALUE, y=COUNT, kind="bar")
-                g.set_xticklabels(plot_df[VALUE], rotation=45)
-                plot_output_path = tempdir_path / f"{label}.categorical.png"
-            else:  # numeric or datetime
-                # We will probably make a distribution plot, but if there's only a few distinct values
-                # then a categorical plot is more useful
-                plot_data = data.value_counts(normalize=True)
-                if len(plot_data) < DISTRIBUTION_PLOT_MIN_VALUES:
-                    logger.debug("Creating a categorical plot ...")
-                    plot_df = make_categorical_plot_data(data)
-                    g = sns.catplot(data=plot_df, x=VALUE, y=COUNT, kind="bar")
-                    g.set_xticklabels(plot_df[VALUE], rotation=45)
-                    plot_output_path = tempdir_path / f"{label}.categorical.png"
-                else:
-                    logger.debug("Creating a distribution plot ...")
-                    g = sns.displot(data)
-                    plot_output_path = tempdir_path / f"{label}.distribution.png"
+        plot_data = data.value_counts(normalize=True)
+        if len(plot_data) >= DISTRIBUTION_PLOT_MIN_VALUES:
+            logger.debug("Creating a distribution plot ...")
+            g = sns.displot(data)
+            plot_output_path = tempdir_path / f"{label}.distribution.png"
             g.set_axis_labels(VALUE, COUNT, labelpad=10)
             g.figure.set_size_inches(PLOT_SIZE_X, PLOT_SIZE_Y)
             g.ax.margins(.15)
             g.savefig(plot_output_path)
             logger.info(f"Wrote {os.stat(plot_output_path).st_size} bytes to '{plot_output_path}'.")
-            myzip.write(plot_output_path, arcname="/".join((IMAGES, plot_output_path.name)))
+            distribution_plot_list.append(label)
+        else:
+            logger.debug("Not enough distinct values to create a distribution plot.")
 
-    myzip.close()
-    logger.info(f"Wrote {os.stat(output_file).st_size} bytes to '{output_file}'.")
+# Convert the summary_dict dictionary of dictionaries to a DataFrame
+result_df = pd.DataFrame.from_dict(summary_dict, orient='index')
+# And write it to a worksheet
+logger.info("Writing summary ...")
+output_file = (output_dir / input_path.stem).with_suffix(".xlsx")
+writer = pd.ExcelWriter(output_file, engine='xlsxwriter')
+result_df.to_excel(writer, sheet_name="Summary")
+# And generate a detail sheet, and optionally a pattern sheet, for each column
+for label, detail_df in detail_dict.items():
+    logger.info(f"Writing detail for column '{label}' ...")
+    detail_df.to_excel(writer, index=False, sheet_name=truncate_string(label+" detail", MAX_SHEET_NAME_LENGTH))
+    if label in pattern_dict:
+        logger.info(f"Writing pattern detail for string column '{label}' ...")
+        pattern_df = pattern_dict[label]
+        pattern_df.to_excel(writer, index=False, sheet_name=truncate_string(label + " pattern", MAX_SHEET_NAME_LENGTH))
+writer.close()
+
+# Add the plots and size bars to the Excel file
+workbook = openpyxl.load_workbook(output_file)
+
+# Plots
+# Look for sheet names corresponding to the plot filename
+sheet_number = -1
+for sheet_name in workbook.sheetnames:
+    sheet_number += 1
+    if sheet_number == 0:  # Skip summary sheet (first sheet, zero-based-index)
+        continue
+    column_name = sheet_name[:-7]  # remove " detail" from sheet name to get column name
+    if column_name in distribution_plot_list:
+        workbook.create_sheet(column_name + " distribution", sheet_number+1)
+        worksheet = workbook.worksheets[sheet_number+1]
+        image_path = tempdir_path / (column_name + ".distribution.png")
+        logger.info(f"Adding {image_path} to {output_file} after sheet {sheet_name} ...")
+        image = openpyxl.drawing.image.Image(image_path)
+        image.anchor = "A1"
+        worksheet.add_image(image)
+        sheet_number += 1
+
+# Size bar columns for the worksheets showing the ranks of values and patterns
+for i, sheet_name in enumerate(workbook.sheetnames):
+    if sheet_name.endswith("detail") or sheet_name.endswith("pattern"):
+        worksheet = workbook.worksheets[i]
+        for row_number in range(2, worksheet.max_row+1):
+            value_to_convert = worksheet[f'C{row_number}'].value  # C = 3rd column, convert from percentage
+            bar_representation = "█" * round(2 * value_to_convert)  # 2 makes a nice scale
+            worksheet[f'D{row_number}'] = bar_representation
+        # And set some visual formatting while we are here
+        worksheet.column_dimensions['B'].width = 25
+        # worksheet.column_dimensions['C'].number_format = "0.0"
+
+# Formatting for the summary sheet
+worksheet = workbook.worksheets[0]
+worksheet.column_dimensions['A'].width = 25  # Column names
+worksheet.column_dimensions['G'].width = 15  # Most common value
+worksheet.column_dimensions['I'].width = 15  # Largest value
+worksheet.column_dimensions['J'].width = 15  # Smallest value
+worksheet.column_dimensions['K'].width = 15  # Longest value
+
+for row in range(1, worksheet.max_row+1):
+    worksheet.cell(row=row, column=1).alignment = Alignment(horizontal='right')
+for row in range(1, worksheet.max_row+1):
+    for col in range(1, 17):
+        worksheet.cell(row=row, column=col).border = Border(outline=Side(border_style=borders.BORDER_THICK, color='FFFFFFFF'))
+
+workbook.save(output_file)
+logger.info(f"Wrote {os.stat(output_file).st_size} bytes to '{output_file}'.")
