@@ -23,6 +23,7 @@ HORIZONTAL_BAR = "―"
 DOTTED_CROSS = "⁜"
 FULL_BLOCK = "█"
 MAX_SHEET_NAME_LENGTH = 31  # Excel limitation
+EXCEL_EXTENSION = ".xlsx"
 ROUNDING = 1  # 5.4% for example
 OBJECT = "object"
 VALUE, COUNT = "Value", "Count"
@@ -161,11 +162,12 @@ if host_name:
     if not jdbc_path.exists():
         logger.critical(f"Cannot find JDBC driver path '{jdbc_jar_file}'.")
         sys.exit(1)
+    logger.info(f"Connecting to '{database_name}' ...")
     if "postgres" in jdbc_path.name:
         class_name = 'org.postgresql.Driver'
         url = f"jdbc:postgresql://{host_name}:{port_number}/{database_name}"
         with jdbc.connect(class_name, url, [user_name, password], jdbc_jar_file) as connection:
-            logger.info(f"Connected to '{database_name}'.")
+            logger.info(f"Connected.")
             query = f"select * from {input_path}"
             if sample_percent:
                 query += f" TABLESAMPLE SYSTEM ({sample_percent})"
@@ -175,7 +177,7 @@ if host_name:
         class_name = 'oracle.jdbc.OracleDriver'
         url = f"jdbc:oracle:thin:@//{host_name}:{port_number}/{database_name}"
         with jdbc.connect(class_name, url, [user_name, password], jdbc_jar_file) as connection:
-            logger.info(f"Connected to '{database_name}'.")
+            logger.info(f"Connected.")
             query = f"select * from {input_path}"
             if sample_percent:
                 query += f" sample({sample_percent})"
@@ -258,7 +260,7 @@ def get_pattern(s, max_length=max_pattern_length):
     :param s: string data
     :return: a pattern analysis, for example abc-123 becomes CCC-999
     """
-    if len(s) > max_length:
+    if not s or len(s) > max_length:
         return s
     s = re.sub("[a-zA-Z]", "C", s)  # Replace letters with 'C'
     s = re.sub(r"\d", "9", s)  # Replace numbers with '9'
@@ -378,7 +380,17 @@ for label in input_df.columns:
 result_df = pd.DataFrame.from_dict(summary_dict, orient='index')
 # And write it to a worksheet
 logger.info("Writing summary ...")
-output_file = (output_dir / input_path.stem).with_suffix(".xlsx")
+# Set target filename based on database v. file and whether we are sampling
+if host_name and sample_percent:
+    output_file = (output_dir / f"{input_path}.sample{sample_percent}pct{EXCEL_EXTENSION}")
+elif host_name and not sample_percent:
+    output_file = (output_dir / f"{input_path}{EXCEL_EXTENSION}")
+elif not host_name and sample_percent:
+    output_file = (output_dir / input_path).with_suffix(f".sample{sample_percent}pct{EXCEL_EXTENSION}")
+elif not host_name and not sample_percent:
+    output_file = (output_dir / input_path).with_suffix(EXCEL_EXTENSION)
+else:
+    raise("Programming error.")
 writer = pd.ExcelWriter(output_file, engine='xlsxwriter')
 result_df.to_excel(writer, sheet_name="Summary")
 # And generate a detail sheet, and optionally a pattern sheet, for each column
