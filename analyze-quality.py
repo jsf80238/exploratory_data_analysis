@@ -17,10 +17,6 @@ import openpyxl
 from openpyxl.styles import Border, Side, Alignment, Font, borders
 import seaborn as sns
 
-UP_ARROW = "⤒"
-DOWN_ARROW = "⤓"
-HORIZONTAL_BAR = "―"
-DOTTED_CROSS = "⁜"
 FULL_BLOCK = "█"
 MAX_SHEET_NAME_LENGTH = 31  # Excel limitation
 EXCEL_EXTENSION = ".xlsx"
@@ -337,10 +333,11 @@ for label in input_df.columns:
         detail_df = pd.DataFrame()
         max_length = min(max_detail_values, len(data.value_counts(dropna=False)))
         # Create 3-column ascending visual
-        detail_df["rank " + DOWN_ARROW] = list(range(1, max_length + 1))
-        detail_df["value " + DOWN_ARROW] = list(data.value_counts(dropna=False).index)[:max_length]
+        detail_df["rank"] = list(range(1, max_length + 1))
+        detail_df["value"] = list(data.value_counts(dropna=False).index)[:max_length]
+        detail_df["count"] = list(data.value_counts(dropna=False))[:max_length]
         percent_total_list = list(data.value_counts(dropna=False, normalize=True))[:max_length]
-        detail_df["%total " + DOWN_ARROW] = [round(x*100, ROUNDING) for x in percent_total_list]
+        detail_df["%total"] = [round(x*100, ROUNDING) for x in percent_total_list]
     else:
         logger.info(f"Column is empty.")
 
@@ -354,10 +351,11 @@ for label in input_df.columns:
         pattern_data = data.apply(get_pattern)
         pattern_analysis = pattern_data.value_counts(normalize=True)
         max_length = min(max_detail_values, len(pattern_data.value_counts(dropna=False)))
-        pattern_df["rank " + DOWN_ARROW] = list(range(1, max_length + 1))
-        pattern_df["pattern " + DOWN_ARROW] = list(pattern_data.value_counts(dropna=False).index)[:max_length]
+        pattern_df["rank"] = list(range(1, max_length + 1))
+        pattern_df["pattern"] = list(pattern_data.value_counts(dropna=False).index)[:max_length]
+        pattern_df["count"] = list(pattern_data.value_counts(dropna=False))[:max_length]
         percent_total_list = list(pattern_data.value_counts(dropna=False, normalize=True))[:max_length]
-        pattern_df["%total " + DOWN_ARROW] = [round(x*100, ROUNDING) for x in percent_total_list]
+        pattern_df["%total"] = [round(x*100, ROUNDING) for x in percent_total_list]
         pattern_dict[label] = pattern_df
     else:  # Numeric/datetime data
         sns.set_theme()
@@ -386,9 +384,9 @@ if host_name and sample_percent:
 elif host_name and not sample_percent:
     output_file = (output_dir / f"{input_path}{EXCEL_EXTENSION}")
 elif not host_name and sample_percent:
-    output_file = (output_dir / input_path).with_suffix(f".sample{sample_percent}pct{EXCEL_EXTENSION}")
+    output_file = (output_dir / f"{input_path.stem}.sample{sample_percent}pct{EXCEL_EXTENSION}")
 elif not host_name and not sample_percent:
-    output_file = (output_dir / input_path).with_suffix(EXCEL_EXTENSION)
+    output_file = (output_dir / f"{input_path.stem}{EXCEL_EXTENSION}")
 else:
     raise("Programming error.")
 writer = pd.ExcelWriter(output_file, engine='xlsxwriter')
@@ -429,9 +427,9 @@ for i, sheet_name in enumerate(workbook.sheetnames):
     if sheet_name.endswith("detail") or sheet_name.endswith("pattern"):
         worksheet = workbook.worksheets[i]
         for row_number in range(2, worksheet.max_row+1):
-            value_to_convert = worksheet[f'C{row_number}'].value  # C = 3rd column, convert from percentage
-            bar_representation = "█" * round(2 * value_to_convert)  # 2 makes a nice scale
-            worksheet[f'D{row_number}'] = bar_representation
+            value_to_convert = worksheet[f'D{row_number}'].value  # C = 3rd column, convert from percentage
+            bar_representation = "█" * round(value_to_convert)
+            worksheet[f'E{row_number}'] = bar_representation
         # And set some visual formatting while we are here
         worksheet.column_dimensions['B'].width = 25
         # worksheet.column_dimensions['C'].number_format = "0.0"
