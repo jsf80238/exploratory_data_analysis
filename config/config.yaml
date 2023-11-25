@@ -1,0 +1,56 @@
+jdbc:
+  port_number:
+    mssql: 1433
+    postgresql: 5432
+
+  class_name:
+    mssql: ../jars/mssql-jdbc-12.4.2.jre11.jar
+    postgresql: org.postgresql.Driver
+
+  jar:
+    mssql: ../jars/mssql-jdbc-12.4.2.jre11.jar
+    postgresql: ../jars/postgresql-42.7.0.jar
+
+  connection_string:
+    mssql: connect_string = f"jdbc:sqlserver://{host_name}:{port_number};database={database_name};user={user_name}@{host_name};password={password};"
+            connect_string += f"encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout={timeout};"
+    postgresql:         url = f"jdbc:postgresql://{host_name}:{port_number}/{database_name}"
+        with jdbc.connect(class_name, url, [user_name, password], jdbc_jar_file) as connection:
+
+  column_info:
+    mssql: "
+      select 
+        column_name, 
+        is_nullable, 
+        data_type, 
+        character_maximum_length, 
+        numeric_precision, 
+        numeric_precision_radix, 
+        numeric_scale, 
+        datetime_precision 
+      from 
+        information_schema.columns 
+      where 
+        table_schema = ? 
+        and table_name = ? 
+      order by 
+        ordinal_position
+      "
+    postgresql: " 
+      select 
+        column_name, 
+        is_nullable, 
+        data_type, 
+        character_maximum_length, 
+        numeric_precision, 
+        numeric_precision_radix, 
+        numeric_scale, 
+        datetime_precision 
+      from 
+        information_schema.columns 
+      where 
+        table_schema = ? 
+        and table_name = ? 
+      order by 
+        ordinal_position
+      "

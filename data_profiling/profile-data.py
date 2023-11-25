@@ -9,6 +9,7 @@ import tempfile
 import zipfile
 # Imports above are standard Python
 # Imports below are 3rd-party
+from lib.base import C, Database, Logger
 from argparse_range import range_action
 import pandas as pd
 from dateutil.parser import parse
@@ -17,9 +18,7 @@ import openpyxl
 from openpyxl.styles import Border, Side, Alignment, Font, borders
 import seaborn as sns
 
-FULL_BLOCK = "█"
 MAX_SHEET_NAME_LENGTH = 31  # Excel limitation
-EXCEL_EXTENSION = ".xlsx"
 ROUNDING = 1  # 5.4% for example
 OBJECT = "object"
 VALUE, COUNT = "Value", "Count"
@@ -78,45 +77,59 @@ ANALYSIS_LIST = (
 
 
 parser = argparse.ArgumentParser(
-    description='Profile the data in a CSV file or database table/view. Supported JDBC methods are: orathin-service, postgresql.',
+    description='Profile the data in a CSV file or database table/view. Supported databases are: mssql, postgresql.',
     epilog='Generates an analysis consisting of an Excel workbook and (optionally) one or more images.'
 )
 parser.add_argument('input',
-                    metavar="/path/to/file.csv | table/view",
-                    help="If a file no connect string required. If a table/view it may need to be fully qualified as database.schema.name depending on the privileges of the user.")
-parser.add_argument('--db-host-name', metavar="HOSTNAME/IPADDR")
-parser.add_argument('--db-port-number', metavar="NUM")
-parser.add_argument('--db-name', metavar="MY_DATABASE")
-parser.add_argument('--db-user-name', metavar="MY_USER")
-parser.add_argument('--db-password', metavar="MY_PASSWORD")
-parser.add_argument('--jdbc-path',
-                    metavar="/path/to/file.jar",
-                    help="https://www.codejava.net/java-se/jdbc/jdbc-driver-library-download.")
-parser.add_argument('--header',
+                    metavar="/path/to/input_data_file.csv | query",
+                    help="If a file no connection information required.")
+parser.add_argument('--db-host-name',
+                    metavar="HOST_NAME",
+                    help="Overrides environment variables.")
+parser.add_argument('--db-port-number',
+                    metavar="PORT_NUMBER",
+                    help="Overrides environment variables.")
+parser.add_argument('--db-name',
+                    metavar="DATABASE_NAME",
+                    help="Overrides environment variables.")
+parser.add_argument('--db-user-name',
+                    metavar="USER_NAME",
+                    help="Overrides environment variables.")
+parser.add_argument('--db-password',
+                    metavar="PASSWORD",
+                    help="Overrides environment variables.")
+parser.add_argument('--header-lines',
                     type=int,
                     metavar="NUM",
-                    help="Specify the number of rows to skip for header information. Ignored when getting data from a database.")
+                    action=range_action(1, sys.maxsize),
+                    default=0,
+                    help="When reading from a file specifies the number of rows to skip for header information. Ignored when getting data from a database. Default is 0.")
+parser.add_argument('--sample-size',
+                    type=int,
+                    metavar="NUM",
+                    action=range_action(1, sys.maxsize),
+                    help=f"Randomly choose this number of rows. If greater than or equal to the number of data rows will use all rows.")
 parser.add_argument('--max-detail-values',
                     type=int,
                     metavar="NUM",
-                    action=range_action(1, 1e99),
+                    action=range_action(1, sys.maxsize),
                     default=DEFAULT_MAX_DETAIL_VALUES,
                     help=f"Produce this many of the top/bottom value occurrences, default is {DEFAULT_MAX_DETAIL_VALUES}.")
 parser.add_argument('--max-pattern-length',
                     type=int,
                     metavar="NUM",
-                    action=range_action(1, 1e99),
+                    action=range_action(1, sys.maxsize),
                     default=DEFAULT_MAX_PATTERN_LENGTH,
                     help=f"When segregating strings into patterns leave untouched strings of length greater than this, default is {DEFAULT_MAX_PATTERN_LENGTH}.")
-parser.add_argument('--sample-percent',
-                    type=int,
-                    metavar="NUM",
-                    action=range_action(1, 99),
-                    help=f"Randomly choose this percentage of the input data and ignore the remainder.")
-parser.add_argument('--output-dir', metavar="/path/to/dir", default=Path.cwd(), help="Default is the current directory.")
+parser.add_argument('--output-dir',
+                    metavar="/path/to/dir",
+                    default=Path.cwd(),
+                    help="Default is the current directory.")
+
 logging_group = parser.add_mutually_exclusive_group()
 logging_group.add_argument('-v', '--verbose', action='store_true')
 logging_group.add_argument('-t', '--terse', action='store_true')
+
 args = parser.parse_args()
 input_path = Path(args.input)
 host_name = args.db_host_name
@@ -124,16 +137,18 @@ port_number = args.db_port_number
 database_name = args.db_name
 user_name = args.db_user_name
 password = args.db_password
-jdbc_jar_file = args.jdbc_path
+header_lines = args.header_lines
+sample_percent = args.sample_percent
 max_detail_values = args.max_detail_values
 max_pattern_length = args.max_pattern_length
-sample_percent = args.sample_percent
 output_dir = Path(args.output_dir)
 
 if host_name and not (port_number and database_name and user_name and password):
-    parser.error("Connecting to a database requires: --db-host-name, --db-port-number, --db-name, --db-user-name, --db-password, --jdbc_path")
+    parser.error("Connecting to a database requires: --db-host-name, --db-port-number, --db-name, --db-user-name, --db-password")
 if not output_dir.exists():
     parser.error("Directory '{output_dir}' does not exist.")
+if input_path.endswith(".csv"):
+    pass
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -148,6 +163,7 @@ elif args.terse:
 else:
     handler.setLevel(logging.INFO)
 
+jdbc_jar_file = None
 
 # Now, read the data
 if host_name:
