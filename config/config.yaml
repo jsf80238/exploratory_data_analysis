@@ -1,21 +1,22 @@
+logging:
+  level: INFO
+
 jdbc:
   port_number:
     mssql: 1433
     postgresql: 5432
 
-  class_name:
-    mssql: ../jars/mssql-jdbc-12.4.2.jre11.jar
-    postgresql: org.postgresql.Driver
+#  class_name:
+#    mssql: ../jars/mssql-jdbc-12.4.2.jre11.jar
+#    postgresql: org.postgresql.Driver
 
   jar:
     mssql: ../jars/mssql-jdbc-12.4.2.jre11.jar
     postgresql: ../jars/postgresql-42.7.0.jar
 
   connection_string:
-    mssql: connect_string = f"jdbc:sqlserver://{host_name}:{port_number};database={database_name};user={user_name}@{host_name};password={password};"
-            connect_string += f"encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout={timeout};"
-    postgresql:         url = f"jdbc:postgresql://{host_name}:{port_number}/{database_name}"
-        with jdbc.connect(class_name, url, [user_name, password], jdbc_jar_file) as connection:
+    mssql: jdbc:sqlserver://{host_name}:{port_number};database={database_name};user={user_name}@{host_name};password={password};
+    postgresql: postgres://{user_name}:{password}@{host_name}:{port_number}/{database_name}
 
   column_info:
     mssql: "

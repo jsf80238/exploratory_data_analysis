@@ -74,8 +74,6 @@ ANALYSIS_LIST = (
     STDDEV,
 )
 
-
-
 parser = argparse.ArgumentParser(
     description='Profile the data in a CSV file or database table/view. Supported databases are: mssql, postgresql.',
     epilog='Generates an analysis consisting of an Excel workbook and (optionally) one or more images.'
@@ -164,6 +162,40 @@ else:
     handler.setLevel(logging.INFO)
 
 jdbc_jar_file = None
+
+import random
+import pandas as pd
+
+def select_random_rows(input_file, output_file, n):
+    """
+    Selects random n rows from a CSV file and exports them to a new CSV file.
+
+    Args:
+        input_file (str): Path to the input CSV file.
+        output_file (str): Path to the output CSV file.
+        n (int): Number of random rows to select.
+
+    Returns:
+        None
+    """
+    # Read the input CSV file into a pandas DataFrame
+    df = pd.read_csv(input_file)
+
+    # Check if the number of rows in the DataFrame is less than n
+    if len(df) < n:
+        raise ValueError("The number of rows in the input file is less than n.")
+
+    # Select random n rows from the DataFrame
+    random_rows = df.sample(n)
+
+    # Export the selected random rows to a new CSV file
+    random_rows.to_csv(output_file, index=False)
+
+# # Example usage
+# input_file = "input.csv"
+# output_file = "output.csv"
+# select_random_rows(input_file, output_file, 10
+# )
 
 # Now, read the data
 if host_name:

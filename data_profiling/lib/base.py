@@ -1,6 +1,7 @@
 import sys
 from dataclasses import dataclass
 import enum
+from inspect import stack, getargvalues, currentframe, FrameInfo
 import logging
 import os
 from pathlib import Path
@@ -16,6 +17,7 @@ import unicodedata
 import pendulum
 import jaydebeapi as jdbc
 from yaml import load, dump
+
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
@@ -62,47 +64,44 @@ class C(enum.StrEnum):
 
 
 config_dict = Config.get_config()
-jar_file = config_dict[C.DATABASE]["jar_file"]
 if sys.platform in ("linux", "darwin"):
     path_separator = ":"
-elif sys.platform in ("win32", ):
+elif sys.platform in ("win32",):
     path_separator = ";"
 else:
     raise Exception(f"Unexpected platform '{sys.platform}'.")
-os.environ["CLASSPATH"] = os.environ.get("CLASSPATH", "") + path_separator + (Path(__file__).parent / jar_file).as_posix()
-class_name = config_dict[C.DATABASE]["class_name"]
-# database_name = config_dict[C.DATABASE]["database_name"]
-port_number = config_dict[C.DATABASE]["port_number"]
-# database_host = config_dict[C.DATABASE]["host_name"]
-jdbc_path = config_dict[C.DATABASE]["jdbc_path"]
 
 
 class Logger:
-    level = None
-    session = None
-    logger = None
+    __instance = None
 
-    @classmethod
-    def get_logger(
-       cls,
-       level: [str|int] = None,
-       session: str = None,
-    ):
+    def record_factory_factory(session: str):
+        """Enables us to display a session identifier with each log message."""
+        def record_factory(*args, **kwargs):
+            record = old_factory(*args, **kwargs)
+            record.session = session
+            return record
+
+        return record_factory
+
+    def __new__(cls,
+                level: [str | int] = None,
+                session: str = None,
+                **kwargs
+                ):
         """
         Return the same logger for every invocation.
         Includes a session to help with correlation. By default it's a random 6-character string.
         """
-        if session:
-            cls.session = session
-        elif not cls.session:
-            cls.session = ''.join(choices(ascii_lowercase, k=6))
-        if not cls.logger:
+        if not cls.__instance:
+            if session:
+                cls.session = session
+            else:
+                cls.session = ''.join(choices(ascii_lowercase, k=6))
             if level:
                 cls.level = level.upper()
-            if not cls.level:
-                config_dict = Config.get_config()
+            else:
                 cls.level = config_dict["logging"]["level"]
-
 
             cls.logger = logging.getLogger()
             # Add session identifier
@@ -111,76 +110,70 @@ class Logger:
             cls.logger.setLevel(logging.DEBUG)
             # Formatting
             date_format = '%Y-%m-%dT%H:%M:%S%z'
-            formatter = logging.Formatter('%(asctime)s | %(levelname)8s | session=%(session)s | %(message)s', datefmt=date_format)
+            formatter = logging.Formatter('%(asctime)s | %(levelname)8s | session=%(session)s | %(message)s',
+                                          datefmt=date_format)
             # Logging to STDERR
             console_handler = logging.StreamHandler()
             console_handler.setLevel(cls.level)
             console_handler.setFormatter(formatter)
             # Add console handler to logger
             cls.logger.addHandler(console_handler)
-            # Optional DB logging handler
-            if config_dict.get("logging").get("log_to_database"):
-                db_handler = Logger.LogDBHandler()
-                db_handler.setLevel(cls.level)
-                # No formatting required here
-                cls.logger.addHandler(db_handler)
-        # Check to see if this invocation requested a particular logging level
-        if level:
-            for handler in cls.logger.handlers:
-                handler.setLevel(level)
-        # Check to see if this invocation requested a new session key
-        if session:
-            logging.setLogRecordFactory(cls.record_factory_factory(cls.session))
+            cls.__instance = object.__new__(cls)
+        return cls.__instance
+
+    @classmethod
+    def get_logger(cls) -> logging.Logger:
         return cls.logger
+
+    @classmethod
+    def set_level(cls, level: str) -> None:
+        for handler in cls.logger.handlers:
+            handler.setLevel(level)
 
 
 class Database:
     """
     Wrapper around the jaydebeapi module.
     """
-    database_connection = None
-    host_name = get_secret_value("applicationdatabasehostname")
-    database_name = get_secret_value("applicationdatabasedatabasename")
-    user_name = get_secret_value("applicationdatabaseusername")
-    password = get_secret_value("applicationdatabasepassword")
-    timeout = config_dict[C.DATABASE]["timeout"]
-    connect_string = ""
+    __instance = None
 
-    def __init__(self, auto_commit: bool = False):
-        self.logger = Logger.get_logger()
-        self.logger.info(f"Connecting to '{self.database_name} as {self.user_name}' ...")
-        self.database_connection = jdbc.connect(class_name, self.connect_string, [self.user_name, self.password], jdbc_path)
-        self.logger.info("... connected.")
-        self.database_connection.jconn.setAutoCommit(auto_commit)
+    def __new__(cls,
+                host_name: str,
+                port_number: int,
+                database_name: str,
+                user_name: str,
+                password: str,
+                auto_commit: bool = False,
+                **kwargs
+                ):
+        """
+        Return the same database object (connection) for every invocation.
+        """
+        cls.logger = Logger().get_logger()
+        if not cls.__instance:
+            cls.logger.info(f"Connecting to '{database_name} as {user_name}' ...")
+            # Determine database type based on port number
+            dbtype_dict = config_dict["jdbc"]["port_number"]
+            for database_type_name, assigned_port in dbtype_dict.items():
+                if assigned_port == port_number:
+                    break
+            else:
+                raise Exception(f"I don't know what kind of database listens on port {port_number}.")
+            # database_connection = jdbc.connect(class_name, cls.connect_string, [cls.user_name, cls.password], jdbc_path)
+            cls.logger.info("... connected.")
+            # database_connection.jconn.setAutoCommit(auto_commit)
 
-    def __enter__(self) -> jdbc.Connection:
-        return self
+    @classmethod
+    def get_connection(cls) -> jdbc.Connection:
+        return cls.database_connection
 
-    def __exit__(self, exception_type: Optional[Type[BaseException]],
-                 exception_value: Optional[BaseException],
-                 traceback: Optional[types.TracebackType]) -> bool:
-        if exception_type is None:
-            self.logger.info("Committing database actions ...")
-            self.database_connection.commit()
-            self.logger.info("... committed.")
-        else:
-            self.database_connection.rollback()
-            self.logger.error(str(traceback))
-        self.database_connection.close()
-        return False
-
-    def get_connection(self) -> jdbc.Connection:
-        return self.database_connection
-
-    def set_auto_commit(self, setting: bool) -> None:
-        self.database_connection.jconn.setAutoCommit(setting)
-
-    def execute(self,
-            sql: str,
-            parameters: list = list(),
-            cursor: jdbc.Cursor = None,
-            is_debug: bool = False,
-            ) -> Tuple[jdbc.Cursor, list]:
+    @classmethod
+    def execute(cls,
+                sql: str,
+                parameters: list = list(),
+                cursor: jdbc.Cursor = None,
+                is_debug: bool = False,
+                ) -> Tuple[jdbc.Cursor, list]:
         """
         Wrapper around the Cursor class
 
@@ -205,47 +198,49 @@ class Database:
         formatted_sql = re.sub(r"\s+", " ", sql).strip()
         # Make a cursor if one was not supplied by the caller
         if not cursor:
-            cursor = self.database_connection.cursor()
+            cursor = cls.database_connection.cursor()
         # Log the statement with the parameters converted to their passed values
         sql_for_logging = sql
         pattern = re.compile(r"\s*=\s*\?")
         needed_parameter_count = pattern.findall(sql)
         if len(needed_parameter_count) != len(parameters):
-            self.logger.warning(f"I think the query contains {len(needed_parameter_count)} placeholders and I was given {len(parameters)} parameters: {parameters}")
+            cls.logger.warning(
+                f"I think the query contains {len(needed_parameter_count)} placeholders and I was given {len(parameters)} parameters: {parameters}")
         for param in parameters:
             if type(param) == str:
                 param = "'" + param + "'"
             elif type(param) == int:
                 param = str(param)
             else:
-                self.logger.warning("Cannot log SQL, sorry.")
+                cls.logger.warning("Cannot log SQL, sorry.")
                 break
             sql_for_logging = re.sub(pattern, " = " + param, sql_for_logging, 1)
         # Format the SQL to fit on one line
         sql_for_logging = re.sub(r"\s+", " ", sql_for_logging).strip()
         if is_debug:
-            self.logger.info(f"{identification} would have executed: {sql_for_logging}.")
+            cls.logger.info(f"{identification} would have executed: {sql_for_logging}.")
             return cursor, list()
-        # Not merely debugging, try to execute and return results
-        self.logger.info(f"{identification} executing: {sql_for_logging} ...")
+        # We are not merely debugging, so try to execute and return results
+        cls.logger.info(f"{identification} executing: {sql_for_logging} ...")
         try:
             cursor.execute(sql, parameters)
         except Exception as e:
-            self.logger.error(e)
+            cls.logger.error(e)
             raise e
         # Successfully executed, now return a list of the column names
         try:
             column_list = [column[0] for column in cursor.description]
         except TypeError:  # For DML statements there will be no column description returned
             column_list = list()
-            self.logger.info(f"Rows affected: {cursor.rowcount:,d}.")
+            cls.logger.info(f"Rows affected: {cursor.rowcount:,d}.")
         return cursor, column_list
 
-    def fetch_one_row(self,
-        sql: str,
-        parameters: list = list(),
-        default_value=None
-        ) -> Union[list, str, int]:
+    @classmethod
+    def fetch_one_row(cls,
+                      sql: str,
+                      parameters: list = list(),
+                      default_value=None
+                      ) -> Union[list, str, int]:
         """
         Run the given query and fetch the first row.
 
@@ -257,28 +252,31 @@ class Database:
         | If there is only a single element in the select clause the function returns None.
         | If there are multiple elements in the select clause the function to return [None]*the number of elements.
         """
-        cursor, column_list = self.execute(sql, parameters)
+        cursor, column_list = cls.execute(sql, parameters)
         for row in cursor.fetchall():
             if len(row) == 1:
                 return row[0]
             else:
                 return row
             break
-        self.logger.info("No rows selected.")
+        cls.logger.info("No rows selected.")
         if default_value:
             return default_value
         else:
             if len(column_list) == 1:
                 return None
             else:
-                return [None]*len(column_list)
+                return [None] * len(column_list)
 
-    def commit(self) -> None:
-        """
-        Call get_connection().commit().
-        """
-        self.get_connection().commit()
 
+connection = Database(
+    host_name="x",
+    port_number=1,
+    database_name="y",
+    user_name="sa",
+    password="!1Jkrvhmhzyjwc"
+).get_connection()
+exit()
 
 def dedent_sql(s):
     """
