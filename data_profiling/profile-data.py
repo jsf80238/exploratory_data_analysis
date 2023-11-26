@@ -1,27 +1,63 @@
 import argparse
-import logging
-import os
-import re
+from collections import Counter, defaultdict
+import csv
+from datetime import datetime
 from pathlib import Path
+import os
 import random
+import re
 import sys
 import tempfile
 import zipfile
 # Imports above are standard Python
 # Imports below are 3rd-party
-from lib.base import C, Database, Logger
+from lib.base import C, Database, Logger, get_line_count
 from argparse_range import range_action
-import pandas as pd
 from dateutil.parser import parse
+from dotenv import dotenv_values
 import numpy as np
 import openpyxl
 from openpyxl.styles import Border, Side, Alignment, Font, borders
+import pandas as pd
 import seaborn as sns
 
 MAX_SHEET_NAME_LENGTH = 31  # Excel limitation
 ROUNDING = 1  # 5.4% for example
-OBJECT = "object"
 VALUE, COUNT = "Value", "Count"
+NUMBER, DATETIME, STRING = "NUMBER", "DATETIME", "STRING"
+
+DATATYPE_MAPPING_DICT = {
+    "BIGINT": NUMBER,
+    "BINARY": NUMBER,
+    "BIT": NUMBER,
+    "BOOLEAN": NUMBER,
+    "DECIMAL": NUMBER,
+    "DOUBLE": NUMBER,
+    "FLOAT": NUMBER,
+    "INTEGER": NUMBER,
+    "NUMERIC": NUMBER,
+    "REAL": NUMBER,
+    "SMALLINT": NUMBER,
+    "TINYINT": NUMBER,
+    "VARBINARY": NUMBER,
+
+    "DATE": DATETIME,
+    "TIMESTAMP": DATETIME,
+
+    "BLOB": STRING,
+    "CHAR": STRING,
+    "CLOB": STRING,
+    "LONGNVARCHAR": STRING,
+    "LONGVARBINARY": STRING,
+    "LONGVARCHAR": STRING,
+    "NCHAR": STRING,
+    "NCLOB": STRING,
+    "NVARCHAR": STRING,
+    "OTHER": STRING,
+    "SQLXML": STRING,
+    "TIME": STRING,
+    "VARCHAR": STRING,
+}
 
 # When producing a list of detail values and their frequency of occurrence
 DEFAULT_MAX_DETAIL_VALUES = 35
@@ -74,97 +110,50 @@ ANALYSIS_LIST = (
     STDDEV,
 )
 
-parser = argparse.ArgumentParser(
-    description='Profile the data in a CSV file or database table/view. Supported databases are: mssql, postgresql.',
-    epilog='Generates an analysis consisting of an Excel workbook and (optionally) one or more images.'
-)
-parser.add_argument('input',
-                    metavar="/path/to/input_data_file.csv | query",
-                    help="If a file no connection information required.")
-parser.add_argument('--db-host-name',
-                    metavar="HOST_NAME",
-                    help="Overrides environment variables.")
-parser.add_argument('--db-port-number',
-                    metavar="PORT_NUMBER",
-                    help="Overrides environment variables.")
-parser.add_argument('--db-name',
-                    metavar="DATABASE_NAME",
-                    help="Overrides environment variables.")
-parser.add_argument('--db-user-name',
-                    metavar="USER_NAME",
-                    help="Overrides environment variables.")
-parser.add_argument('--db-password',
-                    metavar="PASSWORD",
-                    help="Overrides environment variables.")
-parser.add_argument('--header-lines',
-                    type=int,
-                    metavar="NUM",
-                    action=range_action(1, sys.maxsize),
-                    default=0,
-                    help="When reading from a file specifies the number of rows to skip for header information. Ignored when getting data from a database. Default is 0.")
-parser.add_argument('--sample-size',
-                    type=int,
-                    metavar="NUM",
-                    action=range_action(1, sys.maxsize),
-                    help=f"Randomly choose this number of rows. If greater than or equal to the number of data rows will use all rows.")
-parser.add_argument('--max-detail-values',
-                    type=int,
-                    metavar="NUM",
-                    action=range_action(1, sys.maxsize),
-                    default=DEFAULT_MAX_DETAIL_VALUES,
-                    help=f"Produce this many of the top/bottom value occurrences, default is {DEFAULT_MAX_DETAIL_VALUES}.")
-parser.add_argument('--max-pattern-length',
-                    type=int,
-                    metavar="NUM",
-                    action=range_action(1, sys.maxsize),
-                    default=DEFAULT_MAX_PATTERN_LENGTH,
-                    help=f"When segregating strings into patterns leave untouched strings of length greater than this, default is {DEFAULT_MAX_PATTERN_LENGTH}.")
-parser.add_argument('--output-dir',
-                    metavar="/path/to/dir",
-                    default=Path.cwd(),
-                    help="Default is the current directory.")
 
-logging_group = parser.add_mutually_exclusive_group()
-logging_group.add_argument('-v', '--verbose', action='store_true')
-logging_group.add_argument('-t', '--terse', action='store_true')
+def truncate_string(s: str, max_length: int, filler: str = "...") -> str:
+    """
+    For example, truncate_string("Hello world!", 7) returns:
+    "Hell..."
+    """
+    excess_count = len(s) - max_length
+    if excess_count <= 0:
+        return s
+    else:
+        return s[:max_length - len(filler)] + filler
 
-args = parser.parse_args()
-input_path = Path(args.input)
-host_name = args.db_host_name
-port_number = args.db_port_number
-database_name = args.db_name
-user_name = args.db_user_name
-password = args.db_password
-header_lines = args.header_lines
-sample_percent = args.sample_percent
-max_detail_values = args.max_detail_values
-max_pattern_length = args.max_pattern_length
-output_dir = Path(args.output_dir)
 
-if host_name and not (port_number and database_name and user_name and password):
-    parser.error("Connecting to a database requires: --db-host-name, --db-port-number, --db-name, --db-user-name, --db-password")
-if not output_dir.exists():
-    parser.error("Directory '{output_dir}' does not exist.")
-if input_path.endswith(".csv"):
-    pass
+def get_pattern(l: list) -> dict:
+    """
+    Return a Counter where the keys are the observed patterns and the values are how often they appear.
+    Examples:
+    "hi joe." --> "CC_CCC."
+    "hello4abigail" --> "C(5)9C(7)"
+    :param l: a list of strings
+    :return: a pattern analysis
+    """
+    counter = Counter()
+    for value in l:
+        if not value:
+            continue
+        value = re.sub("[a-zA-Z]", "C", value)  # Replace letters with 'C'
+        value = re.sub(r"\d", "9", value)  # Replace numbers with '9'
+        value = re.sub(r"\s+", "_", value)  # Replace whitespace with '_'
+        value = re.sub(r"\W", "?", value)  # Replace whitespace with '?'
+        # Group long sequences of letters or numbers
+        # See https://stackoverflow.com/questions/76230795/replace-characters-with-a-count-of-characters
+        # The number below (2) means sequences of 3 or more will be grouped
+        value = re.sub(r'(.)\1{2,}', lambda m: f'{m.group(1)}({len(m.group())})', value)
+        counter[value] += 1
+    return counter
 
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-handler = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s | %(levelname)8s | %(message)s', datefmt='%Y-%m-%d %H:%M:%S %Z')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-if args.verbose:
-    handler.setLevel(logging.DEBUG)
-elif args.terse:
-    handler.setLevel(logging.WARNING)
-else:
-    handler.setLevel(logging.INFO)
 
-jdbc_jar_file = None
+def parse_date(a_date: str) -> datetime:
+    try:
+        return parse(a_date)  # dateutil's parser
+    except:
+        return None
 
-import random
-import pandas as pd
 
 def select_random_rows(input_file, output_file, n):
     """
@@ -191,130 +180,170 @@ def select_random_rows(input_file, output_file, n):
     # Export the selected random rows to a new CSV file
     random_rows.to_csv(output_file, index=False)
 
-# # Example usage
-# input_file = "input.csv"
-# output_file = "output.csv"
-# select_random_rows(input_file, output_file, 10
-# )
+
+parser = argparse.ArgumentParser(
+    description='Profile the data in a database or CSV file.',
+    epilog='Generates an analysis consisting of an Excel workbook and (optionally) one or more images.'
+)
+parser.add_argument('input',
+                    metavar="/path/to/input_data_file.csv | query",
+                    help="If a file no connection information required.")
+parser.add_argument('--db-host-name',
+                    metavar="HOST_NAME",
+                    help="Overrides HOST_NAME environment variable.")
+parser.add_argument('--db-port-number',
+                    metavar="PORT_NUMBER",
+                    help="Overrides PORT_NUMBER environment variable.")
+parser.add_argument('--db-name',
+                    metavar="DATABASE_NAME",
+                    help="Overrides DATABASE_NAME environment variable.")
+parser.add_argument('--db-user-name',
+                    metavar="USER_NAME",
+                    help="Overrides USER_NAME environment variable.")
+parser.add_argument('--db-password',
+                    metavar="PASSWORD",
+                    help="Overrides PASSWORD environment variable.")
+parser.add_argument('--environment-file',
+                    metavar="/path/to/file",
+                    help="An additional source of database connection information. Overrides environment settings.")
+parser.add_argument('--header-lines',
+                    type=int,
+                    metavar="NUM",
+                    action=range_action(1, sys.maxsize),
+                    default=0,
+                    help="When reading from a file specifies the number of rows to skip for header information. Ignored when getting data from a database. Default is 0.")
+parser.add_argument('--sample-rows-file',
+                    type=int,
+                    metavar="NUM",
+                    action=range_action(1, sys.maxsize),
+                    help=f"When reading from a file randomly choose this number of rows. If greater than or equal to the number of data rows will use all rows. Ignored when getting data from a database.")
+parser.add_argument('--max-detail-values',
+                    type=int,
+                    metavar="NUM",
+                    action=range_action(1, sys.maxsize),
+                    default=DEFAULT_MAX_DETAIL_VALUES,
+                    help=f"Produce this many of the top/bottom value occurrences, default is {DEFAULT_MAX_DETAIL_VALUES}.")
+parser.add_argument('--max-pattern-length',
+                    type=int,
+                    metavar="NUM",
+                    action=range_action(1, sys.maxsize),
+                    default=DEFAULT_MAX_PATTERN_LENGTH,
+                    help=f"When segregating strings into patterns leave untouched strings of length greater than this, default is {DEFAULT_MAX_PATTERN_LENGTH}.")
+parser.add_argument('--output-dir',
+                    metavar="/path/to/dir",
+                    default=Path.cwd(),
+                    help="Default is the current directory.")
+
+logging_group = parser.add_mutually_exclusive_group()
+logging_group.add_argument('-v', '--verbose', action='store_true')
+logging_group.add_argument('-t', '--terse', action='store_true')
+
+args = parser.parse_args()
+if args.input.endswith(C.CSV_EXTENSION):
+    input_path = Path(args.input)
+    input_query = None
+else:
+    input_path = None
+    input_query = args.input
+host_name = args.db_host_name
+port_number = args.db_port_number
+database_name = args.db_name
+user_name = args.db_user_name
+password = args.db_password
+if args.environment_file:
+    environment_file = Path(args.environment_file)
+else:
+    environment_file = ""
+header_lines = args.header_lines
+sample_rows_file = args.sample_rows_file
+max_detail_values = args.max_detail_values
+max_pattern_length = args.max_pattern_length
+output_dir = Path(args.output_dir)
+
+environment_settings_dict = {
+    **os.environ,
+    **dotenv_values(environment_file),
+}
+if not output_dir.exists():
+    parser.error("Directory '{output_dir}' does not exist.")
+if input_query:
+    # Verify we have the information we need to connect to the database
+    host_name = host_name or environment_settings_dict["HOST_NAME"]
+    port_number = port_number or environment_settings_dict["PORT_NUMBER"]
+    database_name = database_name or environment_settings_dict["DATABASE_NAME"]
+    user_name = user_name or environment_settings_dict["USER_NAME"]
+    password = password or environment_settings_dict["PASSWORD"]
+    if not host_name and port_number and database_name and user_name and password:
+        parser.error("Connecting to a database requires: --db-host-name, --db-port-number, --db-name, --db-user-name, --db-password")
+elif input_path:
+    if not input_path.exists():
+        parser.error(f"Could not find input file '{input_path}'.")
+else:
+    raise Exception("Programming error.")
+
+if args.verbose:
+    logger = Logger().get_logger("DEBUG")
+elif args.terse:
+    logger = Logger().get_logger("WARNING")
+else:
+    logger = Logger().get_logger()
 
 # Now, read the data
-if host_name:
-    # User wants to get the data from a database table or view
-    import jaydebeapi as jdbc
-    # Construct connect string based on database type
-    jdbc_path = Path(jdbc_jar_file)
-    if not jdbc_path.exists():
-        logger.critical(f"Cannot find JDBC driver path '{jdbc_jar_file}'.")
-        sys.exit(1)
-    logger.info(f"Connecting to '{database_name}' ...")
-    if "postgres" in jdbc_path.name:
-        class_name = 'org.postgresql.Driver'
-        url = f"jdbc:postgresql://{host_name}:{port_number}/{database_name}"
-        with jdbc.connect(class_name, url, [user_name, password], jdbc_jar_file) as connection:
-            logger.info(f"Connected.")
-            query = f"select * from {input_path}"
-            if sample_percent:
-                query += f" TABLESAMPLE SYSTEM ({sample_percent})"
-            logger.info(f'Executing "{query}" ...')
-            input_df = pd.read_sql(query, connection)
-    elif "ojdbc" in jdbc_path.name:
-        class_name = 'oracle.jdbc.OracleDriver'
-        url = f"jdbc:oracle:thin:@//{host_name}:{port_number}/{database_name}"
-        with jdbc.connect(class_name, url, [user_name, password], jdbc_jar_file) as connection:
-            logger.info(f"Connected.")
-            query = f"select * from {input_path}"
-            if sample_percent:
-                query += f" sample({sample_percent})"
-            logger.info(f'Executing "{query}" ...')
-            input_df = pd.read_sql(query, connection)
-    else:
-        logger.critical(f"Only Postgresql and Oracle supported.")
-        sys.exit(1)
-else:
-    # Input is coming from a file
-    if not input_path.exists():
-        logger.critical(f"No such file '{args.input}' and database connection arguments not provided.")
-        sys.exit(1)
+data_dict = defaultdict(list)
+datetype_dict = None
+if input_query:
+    # User wants to get the data from a database query
+    mydb = Database(
+        host_name=host_name,
+        port_number=port_number,
+        database_name=database_name,
+        user_name=user_name,
+        password=password
+    )
+    cursor, column_list = mydb.execute(input_query)
+    for r in cursor.fetchall():
+        row = dict(zip(column_list, r))
+        for column_name, value in row.items():
+            data_dict[column_name].append(value)
+elif input_path:
+    # Data is coming from a file
     logger.info(f"Reading from '{input_path}' ...")
-    skip_list = list()
-    # Support sampling
-    if sample_percent:
-        header_size = args.header or 1
-        number_of_rows = sum(1 for line in open(input_path)) - header_size
-        sample_size = int(sample_percent * number_of_rows / 100)
-        skip_list = sorted(random.sample(range(header_size, number_of_rows + 1), number_of_rows - sample_size))
-    if args.header:
-        input_df = pd.read_csv(input_path, skiprows=skip_list, header=args.header)
-    else:
-        input_df = pd.read_csv(input_path, skiprows=skip_list)
-        # Next line: it's useful for debugging to focus on a single column
-        # input_df = pd.read_csv(input_path, skiprows=skip_list, usecols=['activity_date'])
-
-
-def parse_date(date):
-    if date is np.nan:
-        return np.nan
-    else:
-        return parse(date)  # dateutil's parser
-
-
-def truncate_string(s, max_length, filler="..."):
-    """
-    For example, truncate_string("Hello world!", 7) returns:
-    "Hell..."
-    """
-    excess_count = len(s) - max_length
-    if excess_count <= 0:
-        return s
-    else:
-        return s[:max_length-len(filler)] + filler
-
-
-def set_best_type(series):
-    """
-    Set the type so as to give the most interesting/useful analysis
-    :param series: a Pandas/Numpy series
-    :return: prefer in this order:
-    * integer
-    * float
-    * date
-    * string
-    """
-    try:
-        series = series.astype('int')
-    except Exception:
-        logger.debug("Not an integer column.")
-        try:
-            series = series.astype('float')
-        except Exception:
-            logger.debug("Not a float column.")
+    types = defaultdict(str, A="str")  # Pandas is pretty terrible at determining datatypes, but using it for ingestion because it is fast
+    df = pd.read_csv(input_path, dtype='object')
+    if sample_rows_file:
+        df = df.sample(sample_rows_file)
+    data_dict = df.to_dict(orient='list')
+    # Set best type for each column of data
+    for column_name, values in data_dict.items():
+        # Sample up to 100 non-null values
+        non_null_list = [x for x in values if x]
+        sampled_list = random.sample(non_null_list, min(100, len(non_null_list)))
+        is_parse_error = False
+        for item in non_null_list:
             try:
-                series = series.apply(parse).astype('datetime64[ns]')
-                # series = pd.to_datetime(series, infer_datetime_format=True)
-            except Exception:
-                logger.debug("Not a datetime column.")
-    return series
-
-
-def get_pattern(s, max_length=max_pattern_length):
-    """
-    Examples:
-    "hi joe." --> "CC_CCC."
-    "hello4abigail" --> "C(5)9C(7)"
-    :param s: string data
-    :return: a pattern analysis, for example abc-123 becomes CCC-999
-    """
-    if not s or len(s) > max_length:
-        return s
-    s = re.sub("[a-zA-Z]", "C", s)  # Replace letters with 'C'
-    s = re.sub(r"\d", "9", s)  # Replace numbers with '9'
-    s = re.sub(r"\s+", "_", s)  # Replace whitespace with '_'
-    # Group long sequences of letters or numbers
-    # See https://stackoverflow.com/questions/76230795/replace-characters-with-a-count-of-characters
-    # The number below (2) means sequences of 3 or more will be grouped
-    s = re.sub(r'(.)\1{2,}', lambda m: f'{m.group(1)}({len(m.group())})', s)
-    return s
-
+                parse_date(item)
+            except parser._parser.ParserError:
+                is_parse_error = True
+                logger.info(f"Cannot cast column '{column_name}' as a datetime.")
+                break
+        if not is_parse_error:
+            logger.info(f"Casting column '{column_name}' as a datetime.")
+            data_dict[column_name] = map(lambda x: parse(x), values)
+        else:
+            # Not a datetime, try number
+            is_parse_error = False
+            for item in non_null_list:
+                try:
+                    float(item)
+                except ValueError:
+                    is_parse_error = True
+                    logger.info(f"Cannot cast column '{column_name}' as a number.")
+                    break
+            if not is_parse_error:
+                logger.info(f"Casting column '{column_name}' as a number.")
+                data_dict[column_name] = map(lambda x: float(x), values)
+            else:
+                pass  # Currently str values and that's what we will leave them as
 
 # Data has been read into input_df, now process it
 # To temporarily hold distribution plots
@@ -326,10 +355,10 @@ distribution_plot_list = list()
 summary_dict = dict()  # To be converted into the summary worksheet
 detail_dict = dict()  # Each element to be converted into a detail worksheet
 pattern_dict = dict()  # For each string column calculate the frequency of patterns
-for label in input_df.columns:
-    logger.info(f"Working on column '{label}' ...")
-    input_df[label] = set_best_type(input_df[label])
-    data = input_df[label]
+for column_name in input_df.columns:
+    logger.info(f"Working on column '{column_name}' ...")
+    input_df[column_name] = set_best_type(input_df[column_name])
+    data = input_df[column_name]
     logger.debug(f"Treating this column as data type '{data.dtype}'.")
     row_dict = dict.fromkeys(ANALYSIS_LIST)
     # Row count
@@ -389,8 +418,8 @@ for label in input_df.columns:
     else:
         logger.info(f"Column is empty.")
 
-    summary_dict[label] = row_dict
-    detail_dict[label] = detail_df
+    summary_dict[column_name] = row_dict
+    detail_dict[column_name] = detail_df
 
     # For string columns produce a pattern analysis
     # For numeric and datetime columns produce a distribution plot
@@ -404,7 +433,7 @@ for label in input_df.columns:
         pattern_df["count"] = list(pattern_data.value_counts(dropna=False))[:max_length]
         percent_total_list = list(pattern_data.value_counts(dropna=False, normalize=True))[:max_length]
         pattern_df["%total"] = [round(x*100, ROUNDING) for x in percent_total_list]
-        pattern_dict[label] = pattern_df
+        pattern_dict[column_name] = pattern_df
     else:  # Numeric/datetime data
         sns.set_theme()
         sns.set(font_scale=PLOT_FONT_SCALE)
@@ -412,13 +441,13 @@ for label in input_df.columns:
         if len(plot_data) >= DISTRIBUTION_PLOT_MIN_VALUES:
             logger.debug("Creating a distribution plot ...")
             g = sns.displot(data)
-            plot_output_path = tempdir_path / f"{label}.distribution.png"
+            plot_output_path = tempdir_path / f"{column_name}.distribution.png"
             g.set_axis_labels(VALUE, COUNT, labelpad=10)
             g.figure.set_size_inches(PLOT_SIZE_X, PLOT_SIZE_Y)
             g.ax.margins(.15)
             g.savefig(plot_output_path)
             logger.info(f"Wrote {os.stat(plot_output_path).st_size} bytes to '{plot_output_path}'.")
-            distribution_plot_list.append(label)
+            distribution_plot_list.append(column_name)
         else:
             logger.debug("Not enough distinct values to create a distribution plot.")
 
@@ -440,13 +469,13 @@ else:
 writer = pd.ExcelWriter(output_file, engine='xlsxwriter')
 result_df.to_excel(writer, sheet_name="Summary")
 # And generate a detail sheet, and optionally a pattern sheet, for each column
-for label, detail_df in detail_dict.items():
-    logger.info(f"Writing detail for column '{label}' ...")
-    detail_df.to_excel(writer, index=False, sheet_name=truncate_string(label+" detail", MAX_SHEET_NAME_LENGTH))
-    if label in pattern_dict:
-        logger.info(f"Writing pattern detail for string column '{label}' ...")
-        pattern_df = pattern_dict[label]
-        pattern_df.to_excel(writer, index=False, sheet_name=truncate_string(label + " pattern", MAX_SHEET_NAME_LENGTH))
+for column_name, detail_df in detail_dict.items():
+    logger.info(f"Writing detail for column '{column_name}' ...")
+    detail_df.to_excel(writer, index=False, sheet_name=truncate_string(column_name + " detail", MAX_SHEET_NAME_LENGTH))
+    if column_name in pattern_dict:
+        logger.info(f"Writing pattern detail for string column '{column_name}' ...")
+        pattern_df = pattern_dict[column_name]
+        pattern_df.to_excel(writer, index=False, sheet_name=truncate_string(column_name + " pattern", MAX_SHEET_NAME_LENGTH))
 writer.close()
 
 # Add the plots and size bars to the Excel file

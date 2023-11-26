@@ -18,40 +18,46 @@ jdbc:
     mssql: jdbc:sqlserver://put_host_name_here:put_port_number_here;databaseName=put_database_name_here;trustServerCertificate=true
     postgresql: jdbc:postgresql://put_host_name_here:put_port_number_here/put_database_name_here
 
-  column_info:
-    mssql: "
-      select 
-        column_name, 
-        is_nullable, 
-        data_type, 
-        character_maximum_length, 
-        numeric_precision, 
-        numeric_precision_radix, 
-        numeric_scale, 
-        datetime_precision 
-      from 
-        information_schema.columns 
-      where 
-        table_schema = ? 
-        and table_name = ? 
-      order by 
-        ordinal_position
-      "
-    postgresql: " 
-      select 
-        column_name, 
-        is_nullable, 
-        data_type, 
-        character_maximum_length, 
-        numeric_precision, 
-        numeric_precision_radix, 
-        numeric_scale, 
-        datetime_precision 
-      from 
-        information_schema.columns 
-      where 
-        table_schema = ? 
-        and table_name = ? 
-      order by 
-        ordinal_position
-      "
+datatype:
+  mssql:
+    number:
+      - BIGINT
+      - BINARY
+      - BIT
+      - BOOLEAN
+      - DECIMAL
+      - DOUBLE
+      - FLOAT
+      - INTEGER
+      - NUMERIC
+      - REAL
+      - SMALLINT
+      - TINYINT
+      - VARBINARY
+    datetime:
+      - DATE
+      - TIMESTAMP
+    string:
+      - BLOB
+      - CHAR
+      - CLOB
+      - LONGNVARCHAR
+      - LONGVARBINARY
+      - LONGVARCHAR
+      - NCHAR
+      - NCLOB
+      - NVARCHAR
+      - OTHER
+      - SQLXML
+      - TIME
+      - VARCHAR
+
+# https://stackoverflow.com/questions/57981975/how-to-understand-the-cursor-description-returned-columns-in-hdb-from-python
+#name
+#type_code
+#display_size
+#internal_size
+#precision
+#scale
+#null_ok
+#('bigint_col', DBAPITypeObject('BOOLEAN', 'BIGINT', 'BIT', 'INTEGER', 'SMALLINT', 'TINYINT'), 20, 20, 19, 0, 1)

@@ -297,18 +297,50 @@ def dedent_sql(s):
     return "\n".join([x.lstrip() for x in s.splitlines()])
 
 
+def get_line_count(file_path: Union[str, Path]) -> int:
+    """
+    See https://stackoverflow.com/questions/845058/how-to-get-line-count-of-a-large-file-cheaply-in-python
+    """
+    f = open(file_path, 'rb')
+    line_count = 0
+    buf_size = 1024 * 1024
+    read_f = f.raw.read
+
+    buf = read_f(buf_size)
+    while buf:
+        line_count += buf.count(b'\n')
+        buf = read_f(buf_size)
+
+    return line_count
+
+
 if __name__ == "__main__":
     logger = Logger().get_logger()
     logger.info("a logging message")
+    # mydb = Database(
+    #     host_name="localhost",
+    #     port_number=1433,
+    #     database_name="master",
+    #     user_name="sa",
+    #     password="!1Jkrvhmhzyjwc"
+    # )
     mydb = Database(
         host_name="localhost",
-        port_number=1433,
-        database_name="master",
-        user_name="sa",
-        password="!1Jkrvhmhzyjwc"
+        port_number=5432,
+        database_name="example",
+        user_name="postgres",
+        password="password"
     )
     query = """
-        SELECT 1
+        SELECT * from my_table
         """
-    print(mydb.fetch_one_row(query, parameters=list()))
+    cursor, column_list = mydb.execute(query)
+    for item in cursor.description:
+        print(item)
+    for r in cursor.fetchall():
+        # row = dict(zip(column_list, r))
+        for value in r:
+            print()
+            print(value)
+            print(type(value))
     exit()
