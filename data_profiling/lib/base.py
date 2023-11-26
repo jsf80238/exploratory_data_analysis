@@ -286,19 +286,10 @@ class Database:
                 return [None] * len(column_list)
 
 
-connection = Database(
-    host_name="localhost",
-    port_number=1433,
-    database_name="master",
-    user_name="sa",
-    password="!1Jkrvhmhzyjwc"
-).get_connection()
-print(connection)
-exit()
-
 def dedent_sql(s):
     """
     Remove leading spaces from all lines of a SQL query.
+    Useful for logging.
 
     :param s: query
     :return: cleaned-up version of query
@@ -306,29 +297,18 @@ def dedent_sql(s):
     return "\n".join([x.lstrip() for x in s.splitlines()])
 
 
-def get_line_count(file_path: Union[str, Path]) -> int:
-    """
-    See https://stackoverflow.com/questions/845058/how-to-get-line-count-of-a-large-file-cheaply-in-python
-    """
-    f = open(file_path, 'rb')
-    line_count = 0
-    buf_size = 1024 * 1024
-    read_f = f.raw.read
-
-    buf = read_f(buf_size)
-    while buf:
-        line_count += buf.count(b'\n')
-        buf = read_f(buf_size)
-
-    return line_count
-
-
 if __name__ == "__main__":
-    logger = Logger.get_logger()
+    logger = Logger().get_logger()
     logger.info("a logging message")
-    mydb = Database()
+    mydb = Database(
+        host_name="localhost",
+        port_number=1433,
+        database_name="master",
+        user_name="sa",
+        password="!1Jkrvhmhzyjwc"
+    )
     query = """
         SELECT 1
         """
-    print(mydb.fetch_one_row(query, parameters=['STD', 'OCT']))
+    print(mydb.fetch_one_row(query, parameters=list()))
     exit()

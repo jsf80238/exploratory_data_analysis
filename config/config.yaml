@@ -16,7 +16,7 @@ jdbc:
 
   connection_string:
     mssql: jdbc:sqlserver://put_host_name_here:put_port_number_here;databaseName=put_database_name_here;trustServerCertificate=true
-    postgresql: postgres://put_user_name_here:put_password_here@put_host_name_here:put_port_number_here/put_database_name_here
+    postgresql: jdbc:postgresql://put_host_name_here:put_port_number_here/put_database_name_here
 
   column_info:
     mssql: "
