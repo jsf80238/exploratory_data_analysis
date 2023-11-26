@@ -6,17 +6,17 @@ jdbc:
     mssql: 1433
     postgresql: 5432
 
-#  class_name:
-#    mssql: ../jars/mssql-jdbc-12.4.2.jre11.jar
-#    postgresql: org.postgresql.Driver
+  class_name:
+    mssql: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    postgresql: org.postgresql.Driver
 
   jar:
-    mssql: ../jars/mssql-jdbc-12.4.2.jre11.jar
-    postgresql: ../jars/postgresql-42.7.0.jar
+    mssql: lib/jars/mssql-jdbc-12.4.2.jre11.jar
+    postgresql: lib/jars/postgresql-42.7.0.jar
 
   connection_string:
-    mssql: jdbc:sqlserver://{host_name}:{port_number};database={database_name};user={user_name}@{host_name};password={password};
-    postgresql: postgres://{user_name}:{password}@{host_name}:{port_number}/{database_name}
+    mssql: jdbc:sqlserver://put_host_name_here:put_port_number_here;databaseName=put_database_name_here;trustServerCertificate=true
+    postgresql: postgres://put_user_name_here:put_password_here@put_host_name_here:put_port_number_here/put_database_name_here
 
   column_info:
     mssql: "
