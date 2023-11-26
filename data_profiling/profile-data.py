@@ -13,7 +13,7 @@ import zipfile
 # Imports below are 3rd-party
 from lib.base import C, Database, Logger, get_line_count
 from argparse_range import range_action
-from dateutil.parser import parse
+import dateutil.parser
 from dotenv import dotenv_values
 import numpy as np
 import openpyxl
@@ -148,13 +148,6 @@ def get_pattern(l: list) -> dict:
     return counter
 
 
-def parse_date(a_date: str) -> datetime:
-    try:
-        return parse(a_date)  # dateutil's parser
-    except:
-        return None
-
-
 def select_random_rows(input_file, output_file, n):
     """
     Selects random n rows from a CSV file and exports them to a new CSV file.
@@ -268,13 +261,13 @@ if not output_dir.exists():
     parser.error("Directory '{output_dir}' does not exist.")
 if input_query:
     # Verify we have the information we need to connect to the database
-    host_name = host_name or environment_settings_dict["HOST_NAME"]
-    port_number = port_number or environment_settings_dict["PORT_NUMBER"]
-    database_name = database_name or environment_settings_dict["DATABASE_NAME"]
-    user_name = user_name or environment_settings_dict["USER_NAME"]
-    password = password or environment_settings_dict["PASSWORD"]
-    if not host_name and port_number and database_name and user_name and password:
-        parser.error("Connecting to a database requires: --db-host-name, --db-port-number, --db-name, --db-user-name, --db-password")
+    host_name = host_name or environment_settings_dict.get("HOST_NAME")
+    port_number = port_number or environment_settings_dict.get("PORT_NUMBER")
+    database_name = database_name or environment_settings_dict.get("DATABASE_NAME")
+    user_name = user_name or environment_settings_dict.get("USER_NAME")
+    password = password or environment_settings_dict.get("PASSWORD")
+    if not (host_name and port_number and database_name and user_name and password):
+        parser.error("Connecting to a database requires environment variables and/or environment file and/or --db-host-name, --db-port-number, --db-name, --db-user-name, --db-password")
 elif input_path:
     if not input_path.exists():
         parser.error(f"Could not find input file '{input_path}'.")
@@ -290,9 +283,9 @@ else:
 
 # Now, read the data
 data_dict = defaultdict(list)
-datetype_dict = None
+datatype_dict = dict()
 if input_query:
-    # User wants to get the data from a database query
+    # Data is coming from a database query
     mydb = Database(
         host_name=host_name,
         port_number=port_number,
@@ -303,16 +296,34 @@ if input_query:
     cursor, column_list = mydb.execute(input_query)
     for r in cursor.fetchall():
         row = dict(zip(column_list, r))
+        # Store values
         for column_name, value in row.items():
             data_dict[column_name].append(value)
+    # Determine datatype
+    for item in cursor.description:
+        column_name, dbapi_type_code, display_size, internal_size, precision, scale, null_ok = item
+        type_code_desc = str(dbapi_type_code).upper()
+        # The line above converts DBAPITypeObject('BOOLEAN', 'BIGINT', 'BIT', 'INTEGER', 'SMALLINT', 'TINYINT') to
+        # "DBAPITypeObject('BOOLEAN', 'BIGINT', 'BIT', 'INTEGER', 'SMALLINT', 'TINYINT')", which is good enough
+        # to determine the datatype.
+        for key in DATATYPE_MAPPING_DICT:
+            if key in type_code_desc:
+                datatype_dict[column_name] = DATATYPE_MAPPING_DICT[key]
+                break
+        else:
+            logger.error(f"Could not determine data type for column '{column_name}' based on the JDBC metadata: {str(item)}")
+            datatype_dict[column_name] = STRING
 elif input_path:
     # Data is coming from a file
     logger.info(f"Reading from '{input_path}' ...")
     types = defaultdict(str, A="str")  # Pandas is pretty terrible at determining datatypes, but using it for ingestion because it is fast
-    df = pd.read_csv(input_path, dtype='object')
+    df = pd.read_csv(input_path, dtype='object', header=header_lines)
     if sample_rows_file:
         df = df.sample(sample_rows_file)
+    # Export from Pandas to ordinary dictionary (keys = columns, values = list of values)
     data_dict = df.to_dict(orient='list')
+    # Add drop the Pandas-produced un-named column
+    data_dict.pop('Unnamed: 0', None)
     # Set best type for each column of data
     for column_name, values in data_dict.items():
         # Sample up to 100 non-null values
@@ -321,14 +332,15 @@ elif input_path:
         is_parse_error = False
         for item in non_null_list:
             try:
-                parse_date(item)
-            except parser._parser.ParserError:
+                dateutil.parser.parse(item)
+            except:
                 is_parse_error = True
-                logger.info(f"Cannot cast column '{column_name}' as a datetime.")
+                logger.debug(f"Cannot cast column '{column_name}' as a datetime.")
                 break
         if not is_parse_error:
             logger.info(f"Casting column '{column_name}' as a datetime.")
-            data_dict[column_name] = map(lambda x: parse(x), values)
+            data_dict[column_name] = list(map(lambda x: dateutil.parser.parse(x), values))
+            datatype_dict[column_name] = DATETIME
         else:
             # Not a datetime, try number
             is_parse_error = False
@@ -337,13 +349,15 @@ elif input_path:
                     float(item)
                 except ValueError:
                     is_parse_error = True
-                    logger.info(f"Cannot cast column '{column_name}' as a number.")
+                    logger.debug(f"Cannot cast column '{column_name}' as a number.")
                     break
             if not is_parse_error:
                 logger.info(f"Casting column '{column_name}' as a number.")
-                data_dict[column_name] = map(lambda x: float(x), values)
+                data_dict[column_name] = list(map(lambda x: float(x), values))
+                datatype_dict[column_name] = NUMBER
             else:
-                pass  # Currently str values and that's what we will leave them as
+                logger.info(f"Casting column '{column_name}' as a string.")
+                datatype_dict[column_name] = STRING
 
 # Data has been read into input_df, now process it
 # To temporarily hold distribution plots

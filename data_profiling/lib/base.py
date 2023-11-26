@@ -156,6 +156,10 @@ class Database:
         """
         cls.logger = Logger().get_logger()
         if not cls.__instance:
+            if type(port_number) == str:
+                if not port_number.isdigit():
+                    raise Exception(f"Port number {port_number} is not valid.")
+                port_number = int(port_number)
             cls.logger.info(f"Connecting to '{database_name} as {user_name}' ...")
             # Determine database type based on port number
             dbtype_dict = config_dict[C.JDBC][C.PORT_NUMBER]
