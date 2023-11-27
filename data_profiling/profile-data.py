@@ -6,9 +6,9 @@ from pathlib import Path
 import os
 import random
 import re
+from statistics import mean, quantiles, stdev
 import sys
 import tempfile
-import zipfile
 # Imports above are standard Python
 # Imports below are 3rd-party
 from lib.base import C, Database, Logger, get_line_count
@@ -66,9 +66,9 @@ DEFAULT_MAX_PATTERN_LENGTH = 50
 # Don't plot distributions if there are fewer than this number of distinct values
 DISTRIBUTION_PLOT_MIN_VALUES = 6
 # Categorical plots should have no more than this number of distinct values
-# Groups the rest in "Other"
 CATEGORICAL_PLOT_MAX_VALUES = 5
-OTHER = "Other"
+# When determining the datatype of a CSV column examine (up to) this number of records
+DATATYPE_SAMPLING_SIZE = 500
 
 # Plotting visual effects
 PLOT_SIZE_X, PLOT_SIZE_Y = 11, 8.5
@@ -111,6 +111,32 @@ ANALYSIS_LIST = (
 )
 
 
+def convert_str_to_float(value: str) -> float:
+    """
+    Convert CSV strings to a useful data type.
+
+    :param value: the value from the CSV column
+    :return: the data converted to float
+    """
+    if value:
+        return float(value)
+    else:
+        return None
+
+
+def convert_str_to_datetime(value: str) -> datetime:
+    """
+    Convert CSV strings to a useful data type.
+
+    :param values: the value from the CSV column
+    :return: the data converted to float
+    """
+    if value:
+        return dateutil.parser.parse(value)
+    else:
+        return None
+
+
 def truncate_string(s: str, max_length: int, filler: str = "...") -> str:
     """
     For example, truncate_string("Hello world!", 7) returns:
@@ -134,7 +160,7 @@ def get_pattern(l: list) -> dict:
     """
     counter = Counter()
     for value in l:
-        if not value:
+        if not value or len(value) > max_pattern_length:
             continue
         value = re.sub("[a-zA-Z]", "C", value)  # Replace letters with 'C'
         value = re.sub(r"\d", "9", value)  # Replace numbers with '9'
@@ -148,54 +174,27 @@ def get_pattern(l: list) -> dict:
     return counter
 
 
-def select_random_rows(input_file, output_file, n):
-    """
-    Selects random n rows from a CSV file and exports them to a new CSV file.
-
-    Args:
-        input_file (str): Path to the input CSV file.
-        output_file (str): Path to the output CSV file.
-        n (int): Number of random rows to select.
-
-    Returns:
-        None
-    """
-    # Read the input CSV file into a pandas DataFrame
-    df = pd.read_csv(input_file)
-
-    # Check if the number of rows in the DataFrame is less than n
-    if len(df) < n:
-        raise ValueError("The number of rows in the input file is less than n.")
-
-    # Select random n rows from the DataFrame
-    random_rows = df.sample(n)
-
-    # Export the selected random rows to a new CSV file
-    random_rows.to_csv(output_file, index=False)
-
-
 parser = argparse.ArgumentParser(
     description='Profile the data in a database or CSV file.',
     epilog='Generates an analysis consisting of an Excel workbook and (optionally) one or more images.'
 )
 parser.add_argument('input',
-                    metavar="/path/to/input_data_file.csv | query",
-                    help="If a file no connection information required.")
+                    metavar="/path/to/input_data_file.csv | query-against-database")
 parser.add_argument('--db-host-name',
                     metavar="HOST_NAME",
-                    help="Overrides HOST_NAME environment variable.")
+                    help="Overrides HOST_NAME environment variable. Ignored when getting data from a file.")
 parser.add_argument('--db-port-number',
                     metavar="PORT_NUMBER",
-                    help="Overrides PORT_NUMBER environment variable.")
+                    help="Overrides PORT_NUMBER environment variable. Ignored when getting data from a file.")
 parser.add_argument('--db-name',
                     metavar="DATABASE_NAME",
-                    help="Overrides DATABASE_NAME environment variable.")
+                    help="Overrides DATABASE_NAME environment variable. Ignored when getting data from a file.")
 parser.add_argument('--db-user-name',
                     metavar="USER_NAME",
-                    help="Overrides USER_NAME environment variable.")
+                    help="Overrides USER_NAME environment variable. Ignored when getting data from a file.")
 parser.add_argument('--db-password',
                     metavar="PASSWORD",
-                    help="Overrides PASSWORD environment variable.")
+                    help="Overrides PASSWORD environment variable. Ignored when getting data from a file.")
 parser.add_argument('--environment-file',
                     metavar="/path/to/file",
                     help="An additional source of database connection information. Overrides environment settings.")
@@ -234,9 +233,9 @@ logging_group.add_argument('-t', '--terse', action='store_true')
 args = parser.parse_args()
 if args.input.endswith(C.CSV_EXTENSION):
     input_path = Path(args.input)
-    input_query = None
+    input_query = ""
 else:
-    input_path = None
+    input_path = ""
     input_query = args.input
 host_name = args.db_host_name
 port_number = args.db_port_number
@@ -257,8 +256,11 @@ environment_settings_dict = {
     **os.environ,
     **dotenv_values(environment_file),
 }
-if not output_dir.exists():
-    parser.error("Directory '{output_dir}' does not exist.")
+if not output_dir.parent.exists():
+    parser.error("Directory '{output_dir.parent}' does not exist.")
+else:
+    os.makedirs(output_dir, exist_ok=True)
+
 if input_query:
     # Verify we have the information we need to connect to the database
     host_name = host_name or environment_settings_dict.get("HOST_NAME")
@@ -283,7 +285,12 @@ else:
 
 # Now, read the data
 data_dict = defaultdict(list)
-datatype_dict = dict()
+# ↑ Keys are column_names, values are a list of values from the data.
+non_null_data_dict = dict()
+# ↑ A list of non-null values is commonly of interest, calculate it once.
+# Keys are column_names, values are a list of non-null values (if any) from the data.
+datatype_dict = dict()  #
+# ↑ Keys are column_names, values are the type of data (NUMBER, DATETIME, STRING)
 if input_query:
     # Data is coming from a database query
     mydb = Database(
@@ -296,41 +303,69 @@ if input_query:
     cursor, column_list = mydb.execute(input_query)
     for r in cursor.fetchall():
         row = dict(zip(column_list, r))
-        # Store values
+        # Store data
         for column_name, value in row.items():
             data_dict[column_name].append(value)
     # Determine datatype
+    logger.info("Data read.")
     for item in cursor.description:
         column_name, dbapi_type_code, display_size, internal_size, precision, scale, null_ok = item
         type_code_desc = str(dbapi_type_code).upper()
-        # The line above converts DBAPITypeObject('BOOLEAN', 'BIGINT', 'BIT', 'INTEGER', 'SMALLINT', 'TINYINT') to
+        # ↑ Converts things like DBAPITypeObject('BOOLEAN', 'BIGINT', 'BIT', 'INTEGER', 'SMALLINT', 'TINYINT') to
         # "DBAPITypeObject('BOOLEAN', 'BIGINT', 'BIT', 'INTEGER', 'SMALLINT', 'TINYINT')", which is good enough
         # to determine the datatype.
         for key in DATATYPE_MAPPING_DICT:
             if key in type_code_desc:
                 datatype_dict[column_name] = DATATYPE_MAPPING_DICT[key]
+                logger.info(f"Read column '{column_name}' as {DATATYPE_MAPPING_DICT[key]}.")
                 break
         else:
             logger.error(f"Could not determine data type for column '{column_name}' based on the JDBC metadata: {str(item)}")
             datatype_dict[column_name] = STRING
+    # Non-null data is useful for later calculations
+    for column_name, values in data_dict.items():
+        non_null_data_dict[column_name] = [x for x in values if x]
+    # Sometimes the JDBC API returns strings for values its metadata says are dates/datetimes.
+    # Convert these as necessary from Python strings to Python datetimes
+    for column_name, values in data_dict.items():
+        if datatype_dict[column_name] == DATETIME:
+            # Check the type of the first non-null value
+            if type(non_null_data_dict[column_name][0]) == str:
+                data_dict[column_name] = list(map(lambda x: dateutil.parser.parse(x), data_dict[column_name]))
+                non_null_data_dict[column_name] = [x for x in data_dict[column_name] if x]
+
 elif input_path:
     # Data is coming from a file
     logger.info(f"Reading from '{input_path}' ...")
-    types = defaultdict(str, A="str")  # Pandas is pretty terrible at determining datatypes, but using it for ingestion because it is fast
-    df = pd.read_csv(input_path, dtype='object', header=header_lines)
+    # Manage sampling, if any
+    # For example, suppose the file contains 100 lines and we want to sample 20 of them.
+    # The ratio is 20/100, or 0.2, and if a random number between 0 and 1 is less than 0.2
+    # then we will include that row.
     if sample_rows_file:
-        df = df.sample(sample_rows_file)
-    # Export from Pandas to ordinary dictionary (keys = columns, values = list of values)
-    data_dict = df.to_dict(orient='list')
-    # Add drop the Pandas-produced un-named column
-    data_dict.pop('Unnamed: 0', None)
+        ratio = sample_rows_file / get_line_count(input_path)
+    else:
+        ratio = 1  # Include all rows
+    with open(input_path, newline="", encoding="utf-8") as csvfile:
+        csvreader = csv.DictReader(csvfile)
+        for i, row in enumerate(csvreader, 1):
+            if i <= header_lines:
+                continue
+            if ratio >= 1 or random.random() < ratio:
+                for column_name, value in row.items():
+                    data_dict[column_name].append(value)
     # Set best type for each column of data
     for column_name, values in data_dict.items():
-        # Sample up to 100 non-null values
+        if False and column_name != 'Discount_pct':  # For testing
+            continue
+        # Sample up to DATATYPE_SAMPLING_SIZE non-null values
         non_null_list = [x for x in values if x]
-        sampled_list = random.sample(non_null_list, min(100, len(non_null_list)))
+        sampled_list = random.sample(non_null_list, min(DATATYPE_SAMPLING_SIZE, len(non_null_list)))
         is_parse_error = False
-        for item in non_null_list:
+        for item in sampled_list:
+            if len(str(item)) < 6:  # dateutil.parser.parse seems to interpret things like 2.0 as dates
+                is_parse_error = True
+                logger.debug(f"Cannot cast column '{column_name}' as a datetime.")
+                break
             try:
                 dateutil.parser.parse(item)
             except:
@@ -339,12 +374,12 @@ elif input_path:
                 break
         if not is_parse_error:
             logger.info(f"Casting column '{column_name}' as a datetime.")
-            data_dict[column_name] = list(map(lambda x: dateutil.parser.parse(x), values))
+            data_dict[column_name] = list(map(convert_str_to_datetime, values))
             datatype_dict[column_name] = DATETIME
         else:
             # Not a datetime, try number
             is_parse_error = False
-            for item in non_null_list:
+            for item in sampled_list:
                 try:
                     float(item)
                 except ValueError:
@@ -353,11 +388,13 @@ elif input_path:
                     break
             if not is_parse_error:
                 logger.info(f"Casting column '{column_name}' as a number.")
-                data_dict[column_name] = list(map(lambda x: float(x), values))
+                data_dict[column_name] = list(map(convert_str_to_float, values))
                 datatype_dict[column_name] = NUMBER
             else:
                 logger.info(f"Casting column '{column_name}' as a string.")
                 datatype_dict[column_name] = STRING
+        # Non-null data is useful for later calculations
+        non_null_data_dict[column_name] = [x for x in data_dict[column_name] if x]
 
 # Data has been read into input_df, now process it
 # To temporarily hold distribution plots
@@ -369,94 +406,105 @@ distribution_plot_list = list()
 summary_dict = dict()  # To be converted into the summary worksheet
 detail_dict = dict()  # Each element to be converted into a detail worksheet
 pattern_dict = dict()  # For each string column calculate the frequency of patterns
-for column_name in input_df.columns:
+for column_name, values in data_dict.items():  # values is a list of the sample values for this column
+    if not len(values):
+        logger.critical(f"There is no data in '{input_path+input_query}'.")
+        exit()
+    datatype = datatype_dict[column_name]
+    # A list of non-null values are useful for some calculations below
+    non_null_values = non_null_data_dict[column_name]
+    if False and column_name != 'DEFAULT_CODE':
+        continue
+    datatype = datatype_dict[column_name]
     logger.info(f"Working on column '{column_name}' ...")
-    input_df[column_name] = set_best_type(input_df[column_name])
-    data = input_df[column_name]
-    logger.debug(f"Treating this column as data type '{data.dtype}'.")
-    row_dict = dict.fromkeys(ANALYSIS_LIST)
+    column_dict = dict.fromkeys(ANALYSIS_LIST)
     # Row count
-    row_count = data.size
-    if not row_count:
-        logger.warning("No data.")
-        sys.exit()
-    row_dict[ROW_COUNT] = row_count
+    row_count = len(values)
+    column_dict[ROW_COUNT] = row_count
     # Null
-    null_count = row_count - data.count()
-    row_dict[NULL_COUNT] = null_count
+    null_count = row_count - len(non_null_values)
+    column_dict[NULL_COUNT] = null_count
     # Null%
-    row_dict[NULL_PERCENT] = round(100 * null_count / row_count, ROUNDING)
+    column_dict[NULL_PERCENT] = round(100 * null_count / row_count, ROUNDING)
     # Unique
-    unique_count = len(data.unique())
-    row_dict[UNIQUE_COUNT] = unique_count
+    unique_count = len(set(values))
+    column_dict[UNIQUE_COUNT] = unique_count
     # Unique%
-    row_dict[UNIQUE_PERCENT] = round(100 * unique_count / row_count, ROUNDING)
+    column_dict[UNIQUE_PERCENT] = round(100 * unique_count / row_count, ROUNDING)
 
     if null_count != row_count:
-        # Most common (mode)
-        row_dict[MOST_COMMON] = list(data.mode().values)[0]
-        # Most common%
-        row_dict[MOST_COMMON_PERCENT] = round(100 * list(data.value_counts())[0] / row_count, ROUNDING)
+        # Largest & smallest
+        column_dict[LARGEST] = max(non_null_values)
+        column_dict[SMALLEST] = min(non_null_values)
 
-        if data.dtype == OBJECT:
-            # Largest & smallest
-            row_dict[LARGEST] = data.dropna().astype(pd.StringDtype()).max()
-            row_dict[SMALLEST] = data.dropna().astype(pd.StringDtype()).min()
+        if datatype == STRING:
             # Longest & shortest
-            row_dict[LONGEST] = max(data.dropna().astype(pd.StringDtype()).values, key=len)
-            row_dict[SHORTEST] = min(data.dropna().astype(pd.StringDtype()).values, key=len)
+            column_dict[LONGEST] = max(non_null_values, key=len)
+            column_dict[SHORTEST] = max(non_null_values, key=len)
             # No mean/quartiles/stddev statistics for strings
-        else:  # numeric or datetime
-            # Largest & smallest
-            row_dict[LARGEST] = data.max()
-            row_dict[SMALLEST] = data.min()
-            # No longest/shortest for dates and numbers
+        elif datatype == NUMBER:
+            # No longest/shortest for numbers and dates
             # Mean/quartiles/stddev statistics
-            row_dict[MEAN] = data.mean()
-            row_dict[PERCENTILE_25TH] = data.quantile(0.25)
-            row_dict[MEDIAN] = data.quantile(0.5)
-            row_dict[PERCENTILE_75TH] = data.quantile(0.75)
-            row_dict[STDDEV] = data.std()
+            column_dict[MEAN] = mean(non_null_values)
+            column_dict[STDDEV] = stdev(non_null_values)
+            column_dict[PERCENTILE_25TH], column_dict[MEDIAN], column_dict[PERCENTILE_75TH] = quantiles(non_null_values)
+        elif datatype == DATETIME:
+            # No longest/shortest for numbers and dates
+            # Mean/quartiles/stddev statistics
+            values_as_epoch_seconds = [x.timestamp() for x in non_null_values]
+            column_dict[MEAN] = datetime.fromtimestamp(mean(values_as_epoch_seconds))
+            column_dict[STDDEV] = stdev(
+                values_as_epoch_seconds) / 24 / 60 / 60  # Report standard deviation of datetimes in units of days
+            twenty_five, fifty, seventy_five = quantiles(values_as_epoch_seconds)
+            column_dict[PERCENTILE_25TH], column_dict[MEDIAN], column_dict[PERCENTILE_75TH] = datetime.fromtimestamp(
+                twenty_five), datetime.fromtimestamp(fifty), datetime.fromtimestamp(seventy_five)
+        else:
+            raise Exception("Programming error.")
 
         # Value counts
         # Collect no more than number of values available or what was given on the command-line
         # whichever is less
+        counter = Counter(values)
+        max_length = min(max_detail_values, len(non_null_values))
+        most_common_list = counter.most_common(max_length)
+        most_common, most_common_count = most_common_list[0]
+        column_dict[MOST_COMMON] = most_common
+        column_dict[MOST_COMMON_PERCENT] = round(100 * most_common_count / row_count, ROUNDING)
         detail_df = pd.DataFrame()
-        max_length = min(max_detail_values, len(data.value_counts(dropna=False)))
-        # Create 3-column ascending visual
-        detail_df["rank"] = list(range(1, max_length + 1))
-        detail_df["value"] = list(data.value_counts(dropna=False).index)[:max_length]
-        detail_df["count"] = list(data.value_counts(dropna=False))[:max_length]
-        percent_total_list = list(data.value_counts(dropna=False, normalize=True))[:max_length]
-        detail_df["%total"] = [round(x*100, ROUNDING) for x in percent_total_list]
+        # Create 3-column descending visual
+        detail_df["rank"] = list(range(1, len(most_common_list) + 1))
+        detail_df["value"] = [x[0] for x in most_common_list]
+        detail_df["count"] = [x[1] for x in most_common_list]
+        detail_df["%total"] = [round(x[1] * 100 / row_count, ROUNDING) for x in most_common_list]
     else:
-        logger.info(f"Column is empty.")
+        logger.info(f"Column '{column_name}' is empty.")
+        detail_df = None
 
-    summary_dict[column_name] = row_dict
+    summary_dict[column_name] = column_dict
     detail_dict[column_name] = detail_df
 
-    # For string columns produce a pattern analysis
-    # For numeric and datetime columns produce a distribution plot
-    if data.dtype == OBJECT:  # string data
+    # Produce a pattern analysis for strings
+    if datatype == STRING and row_count:
+        pattern_counter = get_pattern(non_null_values)
+        max_length = min(max_detail_values, len(non_null_values))
+        most_common_pattern_list = pattern_counter.most_common(max_length)
         pattern_df = pd.DataFrame()
-        pattern_data = data.apply(get_pattern)
-        pattern_analysis = pattern_data.value_counts(normalize=True)
-        max_length = min(max_detail_values, len(pattern_data.value_counts(dropna=False)))
-        pattern_df["rank"] = list(range(1, max_length + 1))
-        pattern_df["pattern"] = list(pattern_data.value_counts(dropna=False).index)[:max_length]
-        pattern_df["count"] = list(pattern_data.value_counts(dropna=False))[:max_length]
-        percent_total_list = list(pattern_data.value_counts(dropna=False, normalize=True))[:max_length]
-        pattern_df["%total"] = [round(x*100, ROUNDING) for x in percent_total_list]
+        # Create 3-column descending visual
+        pattern_df["rank"] = list(range(1, len(most_common_pattern_list) + 1))
+        pattern_df["pattern"] = [x[0] for x in most_common_pattern_list]
+        pattern_df["count"] = [x[1] for x in most_common_pattern_list]
+        pattern_df["%total"] = [round(x[1] * 100 / row_count, ROUNDING) for x in most_common_pattern_list]
         pattern_dict[column_name] = pattern_df
     else:  # Numeric/datetime data
+        values = pd.Series(values)
         sns.set_theme()
         sns.set(font_scale=PLOT_FONT_SCALE)
-        plot_data = data.value_counts(normalize=True)
+        plot_data = values.value_counts(normalize=True)
         if len(plot_data) >= DISTRIBUTION_PLOT_MIN_VALUES:
             logger.debug("Creating a distribution plot ...")
-            g = sns.displot(data)
+            g = sns.displot(values)
             plot_output_path = tempdir_path / f"{column_name}.distribution.png"
-            g.set_axis_labels(VALUE, COUNT, labelpad=10)
+            g.set_axis_labels(column_name, COUNT, labelpad=10)
             g.figure.set_size_inches(PLOT_SIZE_X, PLOT_SIZE_Y)
             g.ax.margins(.15)
             g.savefig(plot_output_path)
@@ -469,17 +517,7 @@ for column_name in input_df.columns:
 result_df = pd.DataFrame.from_dict(summary_dict, orient='index')
 # And write it to a worksheet
 logger.info("Writing summary ...")
-# Set target filename based on database v. file and whether we are sampling
-if host_name and sample_percent:
-    output_file = (output_dir / f"{input_path}.sample{sample_percent}pct{EXCEL_EXTENSION}")
-elif host_name and not sample_percent:
-    output_file = (output_dir / f"{input_path}{EXCEL_EXTENSION}")
-elif not host_name and sample_percent:
-    output_file = (output_dir / f"{input_path.stem}.sample{sample_percent}pct{EXCEL_EXTENSION}")
-elif not host_name and not sample_percent:
-    output_file = (output_dir / f"{input_path.stem}{EXCEL_EXTENSION}")
-else:
-    raise("Programming error.")
+output_file = (output_dir / f"analysis{C.EXCEL_EXTENSION}")
 writer = pd.ExcelWriter(output_file, engine='xlsxwriter')
 result_df.to_excel(writer, sheet_name="Summary")
 # And generate a detail sheet, and optionally a pattern sheet, for each column
