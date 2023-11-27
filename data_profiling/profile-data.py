@@ -15,16 +15,32 @@ from lib.base import C, Database, Logger, get_line_count
 from argparse_range import range_action
 import dateutil.parser
 from dotenv import dotenv_values
-import numpy as np
 import openpyxl
 from openpyxl.styles import Border, Side, Alignment, Font, borders
 import pandas as pd
 import seaborn as sns
 
-MAX_SHEET_NAME_LENGTH = 31  # Excel limitation
+# Excel limitation
+MAX_SHEET_NAME_LENGTH = 31
+# Excel output
 ROUNDING = 1  # 5.4% for example
+# Headings for Excel output
 VALUE, COUNT = "Value", "Count"
+# Datatypes
 NUMBER, DATETIME, STRING = "NUMBER", "DATETIME", "STRING"
+# When producing a list of detail values and their frequency of occurrence
+DEFAULT_MAX_DETAIL_VALUES = 35
+# When analyzing the patterns of a string column
+DEFAULT_MAX_PATTERN_LENGTH = 50
+# Don't plot distributions if there are fewer than this number of distinct values
+DISTRIBUTION_PLOT_MIN_VALUES = 6
+# Categorical plots should have no more than this number of distinct values
+CATEGORICAL_PLOT_MAX_VALUES = 5
+# When determining the datatype of a CSV column examine (up to) this number of records
+DATATYPE_SAMPLING_SIZE = 500
+# Plotting visual effects
+PLOT_SIZE_X, PLOT_SIZE_Y = 11, 8.5
+PLOT_FONT_SCALE = 0.75
 
 DATATYPE_MAPPING_DICT = {
     "BIGINT": NUMBER,
@@ -58,21 +74,6 @@ DATATYPE_MAPPING_DICT = {
     "TIME": STRING,
     "VARCHAR": STRING,
 }
-
-# When producing a list of detail values and their frequency of occurrence
-DEFAULT_MAX_DETAIL_VALUES = 35
-# When analyzing the patterns of a string column
-DEFAULT_MAX_PATTERN_LENGTH = 50
-# Don't plot distributions if there are fewer than this number of distinct values
-DISTRIBUTION_PLOT_MIN_VALUES = 6
-# Categorical plots should have no more than this number of distinct values
-CATEGORICAL_PLOT_MAX_VALUES = 5
-# When determining the datatype of a CSV column examine (up to) this number of records
-DATATYPE_SAMPLING_SIZE = 500
-
-# Plotting visual effects
-PLOT_SIZE_X, PLOT_SIZE_Y = 11, 8.5
-PLOT_FONT_SCALE = 0.75
 
 ROW_COUNT = "count"
 NULL_COUNT = "null"
@@ -461,6 +462,8 @@ for column_name, values in data_dict.items():  # values is a list of the sample 
         else:
             raise Exception("Programming error.")
 
+        summary_dict[column_name] = column_dict
+
         # Value counts
         # Collect no more than number of values available or what was given on the command-line
         # whichever is less
@@ -476,12 +479,9 @@ for column_name, values in data_dict.items():  # values is a list of the sample 
         detail_df["value"] = [x[0] for x in most_common_list]
         detail_df["count"] = [x[1] for x in most_common_list]
         detail_df["%total"] = [round(x[1] * 100 / row_count, ROUNDING) for x in most_common_list]
+        detail_dict[column_name] = detail_df
     else:
-        logger.info(f"Column '{column_name}' is empty.")
-        detail_df = None
-
-    summary_dict[column_name] = column_dict
-    detail_dict[column_name] = detail_df
+        logger.warning(f"Column '{column_name}' is empty.")
 
     # Produce a pattern analysis for strings
     if datatype == STRING and row_count:
