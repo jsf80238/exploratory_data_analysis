@@ -153,9 +153,11 @@ def truncate_string(s: str, max_length: int, filler: str = "...") -> str:
 def get_pattern(l: list) -> dict:
     """
     Return a Counter where the keys are the observed patterns and the values are how often they appear.
+
     Examples:
-    "hi joe." --> "CC_CCC."
+    "hi joe." --> "CC_C(3)"
     "hello4abigail" --> "C(5)9C(7)"
+    "this+unexpected-   9" --> "C(4)?C(10)?_(3)9"
     :param l: a list of strings
     :return: a pattern analysis
     """
@@ -166,7 +168,7 @@ def get_pattern(l: list) -> dict:
         value = re.sub("[a-zA-Z]", "C", value)  # Replace letters with 'C'
         value = re.sub(r"\d", "9", value)  # Replace numbers with '9'
         value = re.sub(r"\s+", "_", value)  # Replace whitespace with '_'
-        value = re.sub(r"\W", "?", value)  # Replace whitespace with '?'
+        value = re.sub(r"\W", "?", value)  # Replace anything else with '?'
         # Group long sequences of letters or numbers
         # See https://stackoverflow.com/questions/76230795/replace-characters-with-a-count-of-characters
         # The number below (2) means sequences of 3 or more will be grouped
@@ -174,11 +176,9 @@ def get_pattern(l: list) -> dict:
         counter[value] += 1
     return counter
 
-
 parser = argparse.ArgumentParser(
-    description='Profile the data in a database or CSV file.',
-    epilog='Generates an analysis consisting of an Excel workbook and (optionally) one or more images.'
-)
+    description='Profile the data in a database or CSV file. Generates an analysis consisting of an Excel workbook and (optionally) one or more images. For string columns provides a pattern analysis with C replacing letters, 9 replacing numbers, underscore replacing spaces, and question mark replacing everything else.')
+
 parser.add_argument('input',
                     metavar="/path/to/input_data_file.csv | query-against-database")
 parser.add_argument('--db-host-name',
@@ -225,7 +225,7 @@ parser.add_argument('--max-pattern-length',
 parser.add_argument('--output-dir',
                     metavar="/path/to/dir",
                     default=Path.cwd(),
-                    help="Default is the current directory.")
+                    help="Default is the current directory. Will make intermediate directories as necessary.")
 
 logging_group = parser.add_mutually_exclusive_group()
 logging_group.add_argument('-v', '--verbose', action='store_true')
