@@ -12,8 +12,6 @@ So, now you've got potentially a lot of data ... where do you tell your auditors
 That's what this program does.
 
 ## Usage
-I grabbed sample Los Angeles restaurant inspection data from https://www.kaggle.com.
-The URL at that time was https://www.kaggle.com/datasets/cityofLA/la-restaurant-market-health-data. 
 
 ### Installation
 - `git clone https://github.com/jsf80238/data_profiling.git`
@@ -22,32 +20,115 @@ The URL at that time was https://www.kaggle.com/datasets/cityofLA/la-restaurant-
 - `source your_dir/bin/activate`  # or on Windows `your_dir\Scripts\activate.bat`
 - `pip install -r requirements.txt`
 
+### Data preparation
+
+#### CSV file
+Download to a suitable location.
+
+#### Database
+The program will theoretically support any database with a JDBC driver.
+PostgreSQL and Microsoft SQL drivers are included.
+To support another database:
+- Download the JDBC driver to `data_profiling/lib/jars`.
+- Edit `config\config.yaml`:
+  - Add the port number.
+  - Add the JDBC class name.
+  - Add the name of the JDBC jar file.
+  - Add the connection string.
+
+##### Environment file
+You can store your connection credentials in a file or provide them via the command-line.
+
+    $ cat /tmp/env
+
+    HOST_NAME=localhost
+
+    PORT_NUMBER=1433
+    DATABASE_NAME=master
+    USER_NAME=sa
+    PASSWORD=your-password
+
+    # PORT_NUMBER=5432
+    # DATABASE_NAME=example
+    # USER_NAME=postgres
+    # PASSWORD=your-password
+
+
 ### Execution
-    $ your_dir/bin/python analyze-quality.py -h
-    usage: analyze-quality.py [-h] [--header NUM] [--max-detail-values INT] [--sample-percent INT] [--no-plot] [-v | -t] input
+
+    $ export PYTHONPATH="data_profiling:"  # PowerShell:  $env:PYTHONPATH="data_profiling;"
+
+    $ python data_profiling/profile-data.py -h
+    usage: profile-data.py [-h] [--db-host-name HOST_NAME] [--db-port-number PORT_NUMBER]
+                           [--db-name DATABASE_NAME] [--db-user-name USER_NAME]
+                           [--db-password PASSWORD] [--environment-file /path/to/file]
+                           [--header-lines NUM] [--sample-rows-file NUM]
+                           [--max-detail-values NUM] [--max-pattern-length NUM]
+                           [--output-dir /path/to/dir] [-v | -t]
+                           /path/to/input_data_file.csv | query-against-database
     
-    Profile the data in a CSV file.
+    Profile the data in a database or CSV file.
     
     positional arguments:
-      input                 /path/to/file.csv
+      /path/to/input_data_file.csv | query
+                            If a file no connection information required.
     
     options:
       -h, --help            show this help message and exit
-      --header NUM          Specify the number of rows to skip for header information.
-      --max-detail-values INT
-                            Produce this many of the top/bottom value occurrences, default is 35. (must be in range 1..=1e+99)
-      --sample-percent INT  Randomly choose this percentage of the input data and ignore the remainder. (must be in range 1..=99)
-      --no-plot             Don't generate plots.
+      --db-host-name HOST_NAME
+                            Overrides HOST_NAME environment variable. Ignored when getting data
+                            from a file.
+      --db-port-number PORT_NUMBER
+                            Overrides PORT_NUMBER environment variable. Ignored when getting
+                            data from a file.
+      --db-name DATABASE_NAME
+                            Overrides DATABASE_NAME environment variable. Ignored when getting
+                            data from a file.
+      --db-user-name USER_NAME
+                            Overrides USER_NAME environment variable. Ignored when getting data
+                            from a file.
+      --db-password PASSWORD
+                            Overrides PASSWORD environment variable. Ignored when getting data
+                            from a file.
+      --environment-file /path/to/file
+                            An additional source of database connection information. Overrides
+                            environment settings.
+      --header-lines NUM    When reading from a file specifies the number of rows to skip for
+                            header information. Ignored when getting data from a database.
+                            Default is 0. (must be in range 1..=9223372036854775807)
+      --sample-rows-file NUM
+                            When reading from a file randomly choose this number of rows. If
+                            greater than or equal to the number of data rows will use all rows.
+                            Ignored when getting data from a database. (must be in range
+                            1..=9223372036854775807)
+      --max-detail-values NUM
+                            Produce this many of the top/bottom value occurrences, default is
+                            35. (must be in range 1..=9223372036854775807)
+      --max-pattern-length NUM
+                            When segregating strings into patterns leave untouched strings of
+                            length greater than this, default is 50. (must be in range
+                            1..=9223372036854775807)
+      --output-dir /path/to/dir
+                            Default is the current directory.
       -v, --verbose
       -t, --terse
     
     Generates an analysis consisting of an Excel workbook and (optionally) one or more images.
 
-- Download your data.
-- `your_dir/bin/python analyze-quality.py ~/Downloads/restaurant-and-market-health-inspections.csv`
-- The results will be an `.zip` archive in your current directory, named the same as the input file (excepting the extension).
+#### Examples
+
+    # CSV file
+    $ python data_profiling/profile-data.py ~/Downloads/restaurant-and-market-health-inspections.csv
+
+    # CSV file, no more than 10,000 rows, set the output directory
+    $ 
 
 ### Results
+The results will be an `.zip` archive in your current directory.
+
+The results posted below are based on Los Angeles restaurant inspection data I downloaded from https://www.kaggle.com.
+The URL at that time was https://www.kaggle.com/datasets/cityofLA/la-restaurant-market-health-data. 
+
 The program generates a zip file containing:
 - Excel workbook containing multiple sheets:
   - Summary.
