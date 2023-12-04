@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>data_profiling.data_profiling.lib package &mdash; Data Profiling 1.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=292eb321"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Data Profiling
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">data_profiling.data_profiling.lib package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-data_profiling.lib.base">data_profiling.data_profiling.lib.base module</a><ul>
+<li><a class="reference internal" href="#data_profiling.lib.base.C"><code class="docutils literal notranslate"><span class="pre">C</span></code></a><ul>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.BLACK_SQUARE"><code class="docutils literal notranslate"><span class="pre">C.BLACK_SQUARE</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.CHAR"><code class="docutils literal notranslate"><span class="pre">C.CHAR</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.CLASSPATH"><code class="docutils literal notranslate"><span class="pre">C.CLASSPATH</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.CLASS_NAME"><code class="docutils literal notranslate"><span class="pre">C.CLASS_NAME</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.CONNECTION_STRING"><code class="docutils literal notranslate"><span class="pre">C.CONNECTION_STRING</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.CSV_EXTENSION"><code class="docutils literal notranslate"><span class="pre">C.CSV_EXTENSION</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.DATABASE"><code class="docutils literal notranslate"><span class="pre">C.DATABASE</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.DATE"><code class="docutils literal notranslate"><span class="pre">C.DATE</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.DECIMAL"><code class="docutils literal notranslate"><span class="pre">C.DECIMAL</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.EXCEL_EXTENSION"><code class="docutils literal notranslate"><span class="pre">C.EXCEL_EXTENSION</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.FLOAT"><code class="docutils literal notranslate"><span class="pre">C.FLOAT</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.JAR"><code class="docutils literal notranslate"><span class="pre">C.JAR</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.JDBC"><code class="docutils literal notranslate"><span class="pre">C.JDBC</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.NUMBER"><code class="docutils literal notranslate"><span class="pre">C.NUMBER</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.PORT_NUMBER"><code class="docutils literal notranslate"><span class="pre">C.PORT_NUMBER</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.SQL_EXTENSION"><code class="docutils literal notranslate"><span class="pre">C.SQL_EXTENSION</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.C.VARCHAR"><code class="docutils literal notranslate"><span class="pre">C.VARCHAR</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#data_profiling.lib.base.Config"><code class="docutils literal notranslate"><span class="pre">Config</span></code></a><ul>
+<li><a class="reference internal" href="#data_profiling.lib.base.Config.CONFIG_DIR"><code class="docutils literal notranslate"><span class="pre">Config.CONFIG_DIR</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.Config.PRIMARY_CONFIG_FILE"><code class="docutils literal notranslate"><span class="pre">Config.PRIMARY_CONFIG_FILE</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.Config.get_config"><code class="docutils literal notranslate"><span class="pre">Config.get_config()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#data_profiling.lib.base.Database"><code class="docutils literal notranslate"><span class="pre">Database</span></code></a><ul>
+<li><a class="reference internal" href="#data_profiling.lib.base.Database.execute"><code class="docutils literal notranslate"><span class="pre">Database.execute()</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.Database.fetch_one_row"><code class="docutils literal notranslate"><span class="pre">Database.fetch_one_row()</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.Database.get_connection"><code class="docutils literal notranslate"><span class="pre">Database.get_connection()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#data_profiling.lib.base.Logger"><code class="docutils literal notranslate"><span class="pre">Logger</span></code></a><ul>
+<li><a class="reference internal" href="#data_profiling.lib.base.Logger.get_logger"><code class="docutils literal notranslate"><span class="pre">Logger.get_logger()</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.Logger.record_factory_factory"><code class="docutils literal notranslate"><span class="pre">Logger.record_factory_factory()</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.Logger.set_level"><code class="docutils literal notranslate"><span class="pre">Logger.set_level()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#data_profiling.lib.base.dedent_sql"><code class="docutils literal notranslate"><span class="pre">dedent_sql()</span></code></a></li>
+<li><a class="reference internal" href="#data_profiling.lib.base.get_line_count"><code class="docutils literal notranslate"><span class="pre">get_line_count()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-data_profiling.lib">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Data Profiling</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">data_profiling.data_profiling.lib package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/data_profiling.data_profiling.lib.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="data-profiling-data-profiling-lib-package">
+<h1>data_profiling.data_profiling.lib package<a class="headerlink" href="#data-profiling-data-profiling-lib-package" title="Link to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-data_profiling.lib.base">
+<span id="data-profiling-data-profiling-lib-base-module"></span><h2>data_profiling.data_profiling.lib.base module<a class="headerlink" href="#module-data_profiling.lib.base" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_profiling.lib.base.</span></span><span class="sig-name descname"><span class="pre">C</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/data_profiling/lib/base.html#C"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_profiling.lib.base.C" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">StrEnum</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.BLACK_SQUARE">
+<span class="sig-name descname"><span class="pre">BLACK_SQUARE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'■'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.BLACK_SQUARE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.CHAR">
+<span class="sig-name descname"><span class="pre">CHAR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CHAR'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.CHAR" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.CLASSPATH">
+<span class="sig-name descname"><span class="pre">CLASSPATH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CLASSPATH'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.CLASSPATH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.CLASS_NAME">
+<span class="sig-name descname"><span class="pre">CLASS_NAME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'class_name'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.CLASS_NAME" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.CONNECTION_STRING">
+<span class="sig-name descname"><span class="pre">CONNECTION_STRING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'connection_string'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.CONNECTION_STRING" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.CSV_EXTENSION">
+<span class="sig-name descname"><span class="pre">CSV_EXTENSION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'.csv'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.CSV_EXTENSION" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.DATABASE">
+<span class="sig-name descname"><span class="pre">DATABASE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'database'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.DATABASE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.DATE">
+<span class="sig-name descname"><span class="pre">DATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'DATE'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.DATE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.DECIMAL">
+<span class="sig-name descname"><span class="pre">DECIMAL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'DECIMAL'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.DECIMAL" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.EXCEL_EXTENSION">
+<span class="sig-name descname"><span class="pre">EXCEL_EXTENSION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'.xlsx'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.EXCEL_EXTENSION" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.FLOAT">
+<span class="sig-name descname"><span class="pre">FLOAT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'FLOAT'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.FLOAT" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.JAR">
+<span class="sig-name descname"><span class="pre">JAR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'jar'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.JAR" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.JDBC">
+<span class="sig-name descname"><span class="pre">JDBC</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'jdbc'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.JDBC" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.NUMBER">
+<span class="sig-name descname"><span class="pre">NUMBER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'NUMBER'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.NUMBER" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.PORT_NUMBER">
+<span class="sig-name descname"><span class="pre">PORT_NUMBER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'port_number'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.PORT_NUMBER" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.SQL_EXTENSION">
+<span class="sig-name descname"><span class="pre">SQL_EXTENSION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'.sql'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.SQL_EXTENSION" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.C.VARCHAR">
+<span class="sig-name descname"><span class="pre">VARCHAR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'VARCHAR'</span></em><a class="headerlink" href="#data_profiling.lib.base.C.VARCHAR" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="data_profiling.lib.base.Config">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_profiling.lib.base.</span></span><span class="sig-name descname"><span class="pre">Config</span></span><a class="reference internal" href="_modules/data_profiling/lib/base.html#Config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_profiling.lib.base.Config" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.Config.CONFIG_DIR">
+<span class="sig-name descname"><span class="pre">CONFIG_DIR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PosixPath('/home/jason/PycharmProjects/data_profiling/config')</span></em><a class="headerlink" href="#data_profiling.lib.base.Config.CONFIG_DIR" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="data_profiling.lib.base.Config.PRIMARY_CONFIG_FILE">
+<span class="sig-name descname"><span class="pre">PRIMARY_CONFIG_FILE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'config.yaml'</span></em><a class="headerlink" href="#data_profiling.lib.base.Config.PRIMARY_CONFIG_FILE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_profiling.lib.base.Config.get_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'config.yaml'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/data_profiling/lib/base.html#Config.get_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_profiling.lib.base.Config.get_config" title="Link to this definition"></a></dt>
+<dd><p>Read a configuration file from the configuration file directory
+:param file_name: file within the configuration directory
+:return: the configuration corresponding to that file</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="data_profiling.lib.base.Database">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_profiling.lib.base.</span></span><span class="sig-name descname"><span class="pre">Database</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">database_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_commit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/data_profiling/lib/base.html#Database"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_profiling.lib.base.Database" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Wrapper around the jaydebeapi module.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="data_profiling.lib.base.Database.execute">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sql</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cursor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Cursor</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_debug</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Cursor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/data_profiling/lib/base.html#Database.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_profiling.lib.base.Database.execute" title="Link to this definition"></a></dt>
+<dd><p>Wrapper around the Cursor class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sql</strong> – the query to be executed</p></li>
+<li><p><strong>parameters</strong> – the parameters to fill the placeholders</p></li>
+<li><p><strong>cursor</strong> – if provided will be used, else will create a new one</p></li>
+<li><p><strong>is_debug</strong> – if True log the query but don’t do anything</p></li>
+<li><p><strong>is_commit</strong> – if True issue a database commit after (makes sense only for insert/update/delete)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a tuple containing:</p>
+</dd>
+</dl>
+<div class="line-block">
+<div class="line">1: the cursor with the result set</div>
+<div class="line">2: a list of the column names in the result set, or an empty list if not a SELECT statement</div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_profiling.lib.base.Database.fetch_one_row">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fetch_one_row</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sql</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></span><a class="reference internal" href="_modules/data_profiling/lib/base.html#Database.fetch_one_row"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_profiling.lib.base.Database.fetch_one_row" title="Link to this definition"></a></dt>
+<dd><p>Run the given query and fetch the first row.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sql</strong> – the query to be executed</p></li>
+<li><p><strong>parameters</strong> – the parameters to fill the placeholders</p></li>
+<li><p><strong>default_value</strong> – if the query does not return any rows, return this.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>if the return contains two or more things return them as a list, else return a single item.</p>
+</dd>
+</dl>
+<div class="line-block">
+<div class="line">If default_value not provided then …</div>
+<div class="line">If there is only a single element in the select clause the function returns None.</div>
+<div class="line">If there are multiple elements in the select clause the function to return [None]*the number of elements.</div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_profiling.lib.base.Database.get_connection">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_connection</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Connection</span></span></span><a class="reference internal" href="_modules/data_profiling/lib/base.html#Database.get_connection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_profiling.lib.base.Database.get_connection" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="data_profiling.lib.base.Logger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_profiling.lib.base.</span></span><span class="sig-name descname"><span class="pre">Logger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/data_profiling/lib/base.html#Logger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_profiling.lib.base.Logger" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="data_profiling.lib.base.Logger.get_logger">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_logger</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Logger</span></span></span><a class="reference internal" href="_modules/data_profiling/lib/base.html#Logger.get_logger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_profiling.lib.base.Logger.get_logger" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_profiling.lib.base.Logger.record_factory_factory">
+<span class="sig-name descname"><span class="pre">record_factory_factory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/data_profiling/lib/base.html#Logger.record_factory_factory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_profiling.lib.base.Logger.record_factory_factory" title="Link to this definition"></a></dt>
+<dd><p>Enables us to display a session identifier with each log message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_profiling.lib.base.Logger.set_level">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set_level</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/data_profiling/lib/base.html#Logger.set_level"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_profiling.lib.base.Logger.set_level" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="data_profiling.lib.base.dedent_sql">
+<span class="sig-prename descclassname"><span class="pre">data_profiling.lib.base.</span></span><span class="sig-name descname"><span class="pre">dedent_sql</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/data_profiling/lib/base.html#dedent_sql"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_profiling.lib.base.dedent_sql" title="Link to this definition"></a></dt>
+<dd><p>Remove leading spaces from all lines of a SQL query.
+Useful for logging.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>s</strong> – query</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>cleaned-up version of query</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="data_profiling.lib.base.get_line_count">
+<span class="sig-prename descclassname"><span class="pre">data_profiling.lib.base.</span></span><span class="sig-name descname"><span class="pre">get_line_count</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/data_profiling/lib/base.html#get_line_count"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#data_profiling.lib.base.get_line_count" title="Link to this definition"></a></dt>
+<dd><p>See <a class="reference external" href="https://stackoverflow.com/questions/845058/how-to-get-line-count-of-a-large-file-cheaply-in-python">https://stackoverflow.com/questions/845058/how-to-get-line-count-of-a-large-file-cheaply-in-python</a></p>
+</dd></dl>
+
+</section>
+<section id="module-data_profiling.lib">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-data_profiling.lib" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Jason S. Friedman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
