@@ -1,7 +1,7 @@
 Data Profiling documentation
 ============================
 
-.. automodule:: data_profiling.profile_data
+.. automodule:: data_profiling
     :members:
 
 .. toctree::

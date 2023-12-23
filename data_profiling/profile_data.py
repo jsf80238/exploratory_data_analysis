@@ -152,12 +152,13 @@ def truncate_string(s: str, max_length: int, filler: str = "...") -> str:
 
 def get_pattern(l: list) -> dict:
     """
-    Return a Counter where the keys are the observed patterns and the values are how often they appear.
+    | Return a Counter where the keys are the observed patterns and the values are how often they appear.
+    |
+    | Examples:
+    | "hi joe." --> "CC_C(3)"
+    | "hello4abigail" --> "C(5)9C(7)"
+    | "this+unexpected-   9" --> "C(4)?C(10)?_(3)9"
 
-    Examples:
-    "hi joe." --> "CC_C(3)"
-    "hello4abigail" --> "C(5)9C(7)"
-    "this+unexpected-   9" --> "C(4)?C(10)?_(3)9"
     :param l: a list of strings
     :return: a pattern analysis
     """
