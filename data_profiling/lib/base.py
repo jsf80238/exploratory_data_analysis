@@ -189,23 +189,24 @@ class Database:
         return cls.database_connection
 
     @classmethod
-    def execute(cls,
-                sql: str,
-                parameters: list = list(),
-                cursor: jdbc.Cursor = None,
-                is_debug: bool = False,
-                ) -> Tuple[jdbc.Cursor, list]:
+    def execute(
+            cls,
+            sql: str,
+            parameters: list = list(),
+            cursor: jdbc.Cursor = None,
+            is_debug: bool = False,
+            ) -> Tuple[jdbc.Cursor, list]:
         """
-        Wrapper around the Cursor class
+        | Wrapper around the Cursor class
+        | Returns a tuple containing:
+        | 1: the cursor with the result set
+        | 2: a list of the column names in the result set, or an empty list if not a SELECT statement
 
         :param sql: the query to be executed
         :param parameters: the parameters to fill the placeholders
         :param cursor: if provided will be used, else will create a new one
         :param is_debug: if True log the query but don't do anything
-        :param is_commit: if True issue a database commit after (makes sense only for insert/update/delete)
         :return: a tuple containing:
-        | 1: the cursor with the result set
-        | 2: a list of the column names in the result set, or an empty list if not a SELECT statement
         """
         # Gather information about the caller so we can log a useful message
         # Search the stack for the first file which is not this one (that will be the caller we are interested in)
@@ -257,21 +258,22 @@ class Database:
         return cursor, column_list
 
     @classmethod
-    def fetch_one_row(cls,
-                      sql: str,
-                      parameters: list = list(),
-                      default_value=None
-                      ) -> Union[list, str, int]:
+    def fetch_one_row(
+        cls,
+        sql: str,
+        parameters: list = list(),
+        default_value=None
+        ) -> Union[list, str, int]:
         """
-        Run the given query and fetch the first row.
+        | Run the given query and fetch the first row.
+        | If default_value not provided then ...
+        | If there is only a single element in the select clause the function returns None.
+        | If there are multiple elements in the select clause the function to return [None]*the number of elements.
 
         :param sql: the query to be executed
         :param parameters: the parameters to fill the placeholders
         :param default_value: if the query does not return any rows, return this.
         :return: if the return contains two or more things return them as a list, else return a single item.
-        | If default_value not provided then ...
-        | If there is only a single element in the select clause the function returns None.
-        | If there are multiple elements in the select clause the function to return [None]*the number of elements.
         """
         cursor, column_list = cls.execute(sql, parameters)
         for row in cursor.fetchall():
