@@ -163,7 +163,7 @@ The program generates a zip file containing:
   - One image per column, either a categorical plot or distrbution plot depending on which the program thinks would be most helpful.
 
 This is an example summary:
-![Summary](images/analyze_quality/summary.png)
+![Summary](docs/images/summary.png)
 Let's focus on the highlighted cells.
 - C6, C19: these are likely data quality issues. As a percentage of the total data set can be ignored.
 - F2: `serial_number` is unique. Good.
@@ -177,7 +177,7 @@ Let's focus on the highlighted cells.
 Now, details by column.
 #### score
 
-![score.distribution](images/analyze_quality/score.distribution.png)
+![score.distribution](docs/images/score.distribution.png)
 
 - As a first estimate I would have guessed this would look like a Bell curve, perhaps with a bit of [skew](https://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm).
 - Instead, we many more scores of 90 than expected and much fewer scores of 89 than expected (and fewer in the 80s than expected).
@@ -187,13 +187,13 @@ Now, details by column.
   - People don't like to eat at restaurants which fail to achieve a A-rating.
   - Restaurant owners, and to a lesser extent restaurant inspectors, strive to avoid anything other than a A-rating. (Image below courtesy of https://la.eater.com/2015/8/19/9178907/la-county-health-department-restaurant-grades-need-overhaul.)
 
-![restaurant_rating_in_window](images/analyze_quality/restaurant_rating_in_window.png)
+![restaurant_rating_in_window](docs/images/restaurant_rating_in_window.png)
 
 #### employee_id
 
-![employee_id.categorical](images/analyze_quality/employee_id.categorical.png)
+![employee_id.categorical](docs/images/employee_id.categorical.png)
 
-![employee_id_detail](images/analyze_quality/employee_id_detail.png)
+![employee_id_detail](docs/images/employee_id_detail.png)
 
 - One employee (EE0000721) among the 143 who performed inspections handled one out of every fourteen inspections. And it was twice as many as the next busiest inspector. Why?
 
@@ -205,20 +205,20 @@ Now, details by column.
 
 #### facility_name
 
-![facility_name_detail](images/analyze_quality/facility_name_detail.png)
+![facility_name_detail](docs/images/facility_name_detail.png)
 
 - Again, "DODGER STADIUM" leads the way. Are there more restaurants in Dodger Stadium than there are Subway restaurants in all of Los Angeles?
 
 #### owner_name
 
-![owner_name_detail](images/analyze_quality/owner_name_detail.png)
+![owner_name_detail](docs/images/owner_name_detail.png)
 
 - Note the yellow-highlighted cells. This looks to be a data-quality issue .. Levy Premium Food listed twice. When added together this would be the top owner, not Ralph's.
 - Note the blue-highlighted cells. Is true there are only 50% more Starbucks than Whole Foods?
 
 #### service_description
 
-![service_description_detail](images/analyze_quality/service_description_detail.png)
+![service_description_detail](docs/images/service_description_detail.png)
 
 - Only 1.65% of inspections were initiated by the owner. Probably makes sense.
 - All inspections are some variation of "routine", apparently.
