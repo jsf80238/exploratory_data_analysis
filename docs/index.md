@@ -213,7 +213,7 @@ Now, details by column.
 
 ![owner_name_detail](../images/owner_name_detail.png)
 
-- Note the yellow-highlighted cells. This looks to be a data-quality issue .. Levy Premium Food listed twice. When added together this would be the top owner, not Ralph's.
+- Note the yellow-highlighted cells. This looks to be a data-quality issue ... Levy Premium Food listed twice. When added together this would be the top owner, not Ralph's.
 - Note the blue-highlighted cells. Is true there are only 50% more Starbucks than Whole Foods?
 
 #### service_description
