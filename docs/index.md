@@ -1,11 +1,36 @@
-# Author
-[Jason Friedman](https://www.linkedin.com/in/jasonfriedmantechnology/) is the author of this code.
+<!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
 
-## See also
-[Sphinx documentation](https://jasonsfriedman.com/docs/_build/html/)
+- [Overview](#overview)
+- [Usage](#usage)
+   * [Installation](#installation)
+   * [Data preparation](#data-preparation)
+      + [CSV file](#csv-file)
+      + [Database](#database)
+         - [Environment file](#environment-file)
+   * [Execution](#execution)
+      + [A note about sampling](#a-note-about-sampling)
+         - [How to specify sampling](#how-to-specify-sampling)
+      + [Examples](#examples)
+   * [Results](#results)
+      + [score](#score)
+      + [employee_id](#employee_id)
+      + [activity_date](#activity_date)
+      + [facility_name](#facility_name)
+      + [owner_name](#owner_name)
+      + [service_description](#service_description)
+- [Potential improvements](#potential-improvements)
 
-# profile_data.py
-## Overview
+
+- level 1
+    * level 2
+        + level 3
+           - level 4
+
+
+<!-- TOC end -->
+
+<!-- TOC --><a name="overview"></a>
+# Overview
 The idea for this code came from my time managing a team of data analysts for an internal audit department of a large company.
 
 The audit team asks the business for certain data and, depending on the prevailing politics of the organization, may eventually receive such data or the permission necessary to extract it.
@@ -14,21 +39,26 @@ So, now you've got potentially a lot of data ... where do you tell your auditors
 
 That's what this program does.
 
-## Usage
+<!-- TOC --><a name="usage"></a>
+# Usage
 
-### Installation
+<!-- TOC --><a name="installation"></a>
+## Installation
 - `git clone https://github.com/jsf80238/data_profiling.git`
 - `cd data_profiling`
 - `python3 -m venv your_dir`
 - `source your_dir/bin/activate`  # or on Windows `your_dir\Scripts\activate.bat`
 - `pip install -r requirements.txt`
 
-### Data preparation
+<!-- TOC --><a name="data-preparation"></a>
+## Data preparation
 
-#### CSV file
+<!-- TOC --><a name="csv-file"></a>
+### CSV file
 Download to a suitable location.
 
-#### Database
+<!-- TOC --><a name="database"></a>
+### Database
 The program will theoretically support any database with a JDBC driver.
 PostgreSQL and Microsoft SQL drivers are included.
 To support another database:
@@ -39,7 +69,8 @@ To support another database:
   - Add the name of the JDBC jar file.
   - Add the connection string.
 
-##### Environment file
+<!-- TOC --><a name="environment-file"></a>
+#### Environment file
 You can store your connection credentials in a file or provide them via the command-line.
 
     $ cat /tmp/env
@@ -57,7 +88,8 @@ You can store your connection credentials in a file or provide them via the comm
     # PASSWORD=your-password
 
 
-### Execution
+<!-- TOC --><a name="execution"></a>
+## Execution
 
     $ export PYTHONPATH="data_profiling:"  # PowerShell:  $env:PYTHONPATH="data_profiling;"
 
@@ -119,12 +151,14 @@ You can store your connection credentials in a file or provide them via the comm
       -v, --verbose
       -t, --terse
 
-#### A note about sampling
+<!-- TOC --><a name="a-note-about-sampling"></a>
+### A note about sampling
 If your task is to write code which [ETLs](https://en.wikipedia.org/wiki/Extract,_transform,_load) account data for a financial institution then sampling may not be an option ... your code needs to handle every source row it encounters.
 
 For analysis tasks, though, the [Central Limit Theorem](https://www.statisticshowto.com/probability-and-statistics/normal-distributions/central-limit-theorem-definition-examples/) provides really useful results from what intuitively may seem like a small amount of data. See my [StackExchange question](https://math.stackexchange.com/questions/4023389/what-size-sample-do-i-need-to-find-errors-with-a-certain-amount-of-confidence) for a discussion.
 
-##### How to specify sampling
+<!-- TOC --><a name="how-to-specify-sampling"></a>
+#### How to specify sampling
 - CSV file
   - Use the `--sample-rows-file` option. This will be an absolute number, rather than a percentage, because the confidence interval for a sample is based on the absolute number of rows, not the size of the population. If your file contains fewer rows than the number you specify the program will just analyze every row.
 - Database
@@ -132,7 +166,8 @@ For analysis tasks, though, the [Central Limit Theorem](https://www.statisticsho
     - For PostgreSQL see `TABLESAMPLE` and `tsm_system_rows`.
     - For Microsoft SQL see `TABLESAMPLE`.
 
-#### Examples
+<!-- TOC --><a name="examples"></a>
+### Examples
 
     # CSV file
     $ python data_profiling/profile-data.py /path/to/data.csv
@@ -149,7 +184,8 @@ For analysis tasks, though, the [Central Limit Theorem](https://www.statisticsho
     $ python data_profiling/profile-data.py --max-detail=40 --env=/path/to/env/file \
     "select columnA, columnC, columnJ from table_name"
 
-### Results
+<!-- TOC --><a name="results"></a>
+## Results
 The results will be an `.zip` archive in your current directory.
 
 The results posted below are based on Los Angeles restaurant inspection data I downloaded from https://www.kaggle.com.
@@ -175,7 +211,8 @@ Let's focus on the highlighted cells.
 - M7, M18: the program treats numbers as measurements, even though for these columns the numbers are just IDs. Perhaps more sophisticated code could do better.
 
 Now, details by column.
-#### score
+<!-- TOC --><a name="score"></a>
+### score
 
 ![score.distribution](../images/score.distribution.png)
 
@@ -189,7 +226,8 @@ Now, details by column.
 
 ![restaurant_rating_in_window](../images/restaurant_rating_in_window.png)
 
-#### employee_id
+<!-- TOC --><a name="employee_id"></a>
+### employee_id
 
 ![employee_id.categorical](../images/employee_id.categorical.png)
 
@@ -197,33 +235,38 @@ Now, details by column.
 
 - One employee (EE0000721) among the 143 who performed inspections handled one out of every fourteen inspections. And it was twice as many as the next busiest inspector. Why?
 
-#### activity_date
+<!-- TOC --><a name="activity_date"></a>
+### activity_date
 
 ![activity_date_detail](../images/activity_date_detail.png)
 
 - Note the dates with very few inspections (F2, F3, F4 ...). These are Saturdays and Sundays. It makes sense inspectors (city staff) don't work as much on weekends.
 
-#### facility_name
+<!-- TOC --><a name="facility_name"></a>
+### facility_name
 
 ![facility_name_detail](../images/facility_name_detail.png)
 
 - Again, "DODGER STADIUM" leads the way. Are there more restaurants in Dodger Stadium than there are Subway restaurants in all of Los Angeles?
 
-#### owner_name
+<!-- TOC --><a name="owner_name"></a>
+### owner_name
 
 ![owner_name_detail](../images/owner_name_detail.png)
 
 - Note the yellow-highlighted cells. This looks to be a data-quality issue ... Levy Premium Food listed twice. When added together this would be the top owner, not Ralph's.
 - Note the blue-highlighted cells. Is true there are only 50% more Starbucks than Whole Foods?
 
-#### service_description
+<!-- TOC --><a name="service_description"></a>
+### service_description
 
 ![service_description_detail](../images/service_description_detail.png)
 
 - Only 1.65% of inspections were initiated by the owner. Probably makes sense.
 - All inspections are some variation of "routine", apparently.
 
-## Potential improvements
+<!-- TOC --><a name="potential-improvements"></a>
+# Potential improvements
 - Generate better plots. It is difficult to generate useful plots.
   - For example, you might want a categorical plot for character data, but if the column contains customer names then every name will appear (roughly) one time.
   - Or, you might want a histogram for numeric or datetime data, but if the column is a primary key, or a created timestamp generated by a trigger, then again each value will appear (almost always) one time.
