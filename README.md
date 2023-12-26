@@ -1,3 +1,1 @@
-[ReadTheDocs](https://data-profiling.readthedocs.io/)
-
-[API](../docs/_build/html/index.html)
+**[Read The Docs](https://data-profiling.readthedocs.io/)**
