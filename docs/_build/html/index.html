@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Data Profiling documentation &mdash; Data Profiling  documentation</title>
+  <title>API &mdash; Data Profiling  documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -44,8 +44,41 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <!-- Local TOC -->
               <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">Data Profiling documentation</a></li>
-<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+<li><a class="reference internal" href="#">API</a></li>
+<li><a class="reference internal" href="#overview">Overview</a><ul>
+<li><a class="reference internal" href="#what-this-program-does-not-do">What this program does not do</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#installation">Installation</a></li>
+<li><a class="reference internal" href="#data-preparation">Data preparation</a><ul>
+<li><a class="reference internal" href="#csv-file">CSV file</a></li>
+<li><a class="reference internal" href="#database">Database</a><ul>
+<li><a class="reference internal" href="#environment-file">Environment file</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#execution">Execution</a><ul>
+<li><a class="reference internal" href="#a-note-about-sampling">A note about sampling</a><ul>
+<li><a class="reference internal" href="#how-to-specify-sampling">How to specify sampling</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#example-results-for-restaurant-data">Example results for restaurant data</a><ul>
+<li><a class="reference internal" href="#score">score</a></li>
+<li><a class="reference internal" href="#employee-id">employee_id</a></li>
+<li><a class="reference internal" href="#activity-date">activity_date</a></li>
+<li><a class="reference internal" href="#facility-name">facility_name</a></li>
+<li><a class="reference internal" href="#owner-name">owner_name</a></li>
+<li><a class="reference internal" href="#service-description">service_description</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#potential-improvements">Potential improvements</a></li>
 </ul>
 </div>
         </div>
@@ -62,9 +95,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Data Profiling documentation</li>
+      <li class="breadcrumb-item active">API</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/index.md.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -72,17 +105,288 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-data_profiling">
-<span id="data-profiling-documentation"></span><h1>Data Profiling documentation<a class="headerlink" href="#module-data_profiling" title="Link to this heading"></a></h1>
-<div class="toctree-wrapper compound">
+  <section id="api">
+<h1>API<a class="headerlink" href="#api" title="Link to this heading"></a></h1>
+<p><a class="reference internal" href="#./data_profiling.html"><span class="xref myst">data_profiling</span></a></p>
+<p><a href="data_profiling.html">data_profiling API/</a></p>
+</section>
+<section id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h1>
+<p>The idea for this code came from my time managing a team of data analysts for an internal audit department of a large company.</p>
+<p>The audit team asks the business for certain data and, depending on the prevailing politics of the organization, may eventually receive such data or the permission necessary to extract it.</p>
+<p>So, now you’ve got potentially a lot of data … where do you tell your auditors to focus? Wouldn’t it be helpful to have a program which quickly identifies interesting things? And by interesting I mean either likely incorrect, or likely correct but pointing to a business failure.</p>
+<p>That’s what this program does.</p>
+<section id="what-this-program-does-not-do">
+<h2>What this program does not do<a class="headerlink" href="#what-this-program-does-not-do" title="Link to this heading"></a></h2>
+<p>This is not artificial intelligence or machine learning. It <em>is</em> useful statistics which allows a subject-matter expert, or even a well-read person, to quickly spot potential anomalies in a set of data which is otherwise too large to comprehend.</p>
+<p>The anomalies can be incorrect measurements or evidence of a process which is not working as designed or expected. Follow-up, in the form of questions to the data producer, or to the owner or administrator of the underlying process, will likely be required.</p>
+</section>
+</section>
+<section id="usage">
+<h1>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h1>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">https://github.com/jsf80238/data_profiling.git</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">data_profiling</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">python3</span> <span class="pre">-m</span> <span class="pre">venv</span> <span class="pre">your_dir</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">your_dir/bin/activate</span></code>  # or on Windows <code class="docutils literal notranslate"><span class="pre">your_dir\Scripts\activate.bat</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span></code></p></li>
+</ul>
+</section>
+<section id="data-preparation">
+<h2>Data preparation<a class="headerlink" href="#data-preparation" title="Link to this heading"></a></h2>
+<section id="csv-file">
+<h3>CSV file<a class="headerlink" href="#csv-file" title="Link to this heading"></a></h3>
+<p>Download to a suitable location.</p>
+</section>
+<section id="database">
+<h3>Database<a class="headerlink" href="#database" title="Link to this heading"></a></h3>
+<p>The program will theoretically support any database with a JDBC driver.
+PostgreSQL and Microsoft SQL drivers are included.
+To support another database:</p>
+<ul class="simple">
+<li><p>Download the JDBC driver to <code class="docutils literal notranslate"><span class="pre">data_profiling/lib/jars</span></code>.</p></li>
+<li><p>Edit <code class="docutils literal notranslate"><span class="pre">config\config.yaml</span></code>:</p>
+<ul>
+<li><p>Add the port number.</p></li>
+<li><p>Add the JDBC class name.</p></li>
+<li><p>Add the name of the JDBC jar file.</p></li>
+<li><p>Add the connection string.</p></li>
+</ul>
+</li>
+</ul>
+<section id="environment-file">
+<h4>Environment file<a class="headerlink" href="#environment-file" title="Link to this heading"></a></h4>
+<p>You can store your connection credentials in a file or provide them via the command-line.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ cat /tmp/env
+
+HOST_NAME=localhost
+
+PORT_NUMBER=1433
+DATABASE_NAME=master
+USER_NAME=sa
+PASSWORD=your-password
+
+# PORT_NUMBER=5432
+# DATABASE_NAME=example
+# USER_NAME=postgres
+# PASSWORD=your-password
+</pre></div>
 </div>
 </section>
-<section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h1>
+</section>
+</section>
+<section id="execution">
+<h2>Execution<a class="headerlink" href="#execution" title="Link to this heading"></a></h2>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ export PYTHONPATH=&quot;data_profiling:&quot;  # PowerShell:  $env:PYTHONPATH=&quot;data_profiling;&quot;
+
+$ python data_profiling/profile-data.py -h
+usage: profile-data.py [-h] [--db-host-name HOST_NAME] [--db-port-number PORT_NUMBER]
+                       [--db-name DATABASE_NAME] [--db-user-name USER_NAME]
+                       [--db-password PASSWORD] [--environment-file /path/to/file]
+                       [--header-lines NUM] [--sample-rows-file NUM]
+                       [--max-detail-values NUM] [--max-pattern-length NUM]
+                       [--output-dir /path/to/dir] [-v | -t]
+                       /path/to/input_data_file.csv | query-against-database
+
+Profile the data in a database or CSV file. Generates an analysis consisting of an Excel
+workbook and (optionally) one or more images. For string columns provides a pattern
+analysis with C replacing letters, 9 replacing numbers, underscore replacing spaces, and
+question mark replacing everything else.
+
+positional arguments:
+  /path/to/input_data_file.csv | query-against-database
+
+options:
+  -h, --help            show this help message and exit
+  --db-host-name HOST_NAME
+                        Overrides HOST_NAME environment variable. Ignored when getting data
+                        from a file.
+  --db-port-number PORT_NUMBER
+                        Overrides PORT_NUMBER environment variable. Ignored when getting
+                        data from a file.
+  --db-name DATABASE_NAME
+                        Overrides DATABASE_NAME environment variable. Ignored when getting
+                        data from a file.
+  --db-user-name USER_NAME
+                        Overrides USER_NAME environment variable. Ignored when getting data
+                        from a file.
+  --db-password PASSWORD
+                        Overrides PASSWORD environment variable. Ignored when getting data
+                        from a file.
+  --environment-file /path/to/file
+                        An additional source of database connection information. Overrides
+                        environment settings.
+  --header-lines NUM    When reading from a file specifies the number of rows to skip for
+                        header information. Ignored when getting data from a database.
+                        Default is 0. (must be in range 1..=9223372036854775807)
+  --sample-rows-file NUM
+                        When reading from a file randomly choose this number of rows. If
+                        greater than or equal to the number of data rows will use all rows.
+                        Ignored when getting data from a database. (must be in range
+                        1..=9223372036854775807)
+  --max-detail-values NUM
+                        Produce this many of the top/bottom value occurrences, default is
+                        35. (must be in range 1..=9223372036854775807)
+  --max-pattern-length NUM
+                        When segregating strings into patterns leave untouched strings of
+                        length greater than this, default is 50. (must be in range
+                        1..=9223372036854775807)
+  --output-dir /path/to/dir
+                        Default is the current directory. Will make intermediate
+                        directories as necessary.
+  -v, --verbose
+  -t, --terse
+</pre></div>
+</div>
+<section id="a-note-about-sampling">
+<h3>A note about sampling<a class="headerlink" href="#a-note-about-sampling" title="Link to this heading"></a></h3>
+<p>If your task is to write code which <a class="reference external" href="https://en.wikipedia.org/wiki/Extract,_transform,_load">ETLs</a> account data for a financial institution then sampling may not be an option … your code needs to handle every source row it encounters.</p>
+<p>For analysis tasks, though, the <a class="reference external" href="https://www.statisticshowto.com/probability-and-statistics/normal-distributions/central-limit-theorem-definition-examples/">Central Limit Theorem</a> provides really useful results from what intuitively may seem like a small amount of data. See my <a class="reference external" href="https://math.stackexchange.com/questions/4023389/what-size-sample-do-i-need-to-find-errors-with-a-certain-amount-of-confidence">StackExchange question</a> for a discussion.</p>
+<section id="how-to-specify-sampling">
+<h4>How to specify sampling<a class="headerlink" href="#how-to-specify-sampling" title="Link to this heading"></a></h4>
 <ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+<li><p>CSV file</p>
+<ul>
+<li><p>Use the <code class="docutils literal notranslate"><span class="pre">--sample-rows-file</span></code> option. This will be an absolute number, rather than a percentage, because the confidence interval for a sample is based on the absolute number of rows, not the size of the population. If your file contains fewer rows than the number you specify the program will just analyze every row.</p></li>
+</ul>
+</li>
+<li><p>Database</p>
+<ul>
+<li><p>Use your database’s sampling keyword.</p>
+<ul>
+<li><p>For PostgreSQL see <code class="docutils literal notranslate"><span class="pre">TABLESAMPLE</span></code> and <code class="docutils literal notranslate"><span class="pre">tsm_system_rows</span></code>.</p></li>
+<li><p>For Microsoft SQL see <code class="docutils literal notranslate"><span class="pre">TABLESAMPLE</span></code>.</p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="examples">
+<h3>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h3>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span># CSV file
+$ python data_profiling/profile-data.py /path/to/data.csv
+
+# CSV file, no more than 10,000 rows, set the output directory
+$ python data_profiling/profile-data.py --samp=10000 --out=/path/to/a/dir /path/to/data.csv
+
+# Database with connection information in command line
+$ python data_profiling/profile-data.py --db-host=https://domain.com --db-port=5432 \
+--db-name my_database --db-user=me --db-pass=my_password \
+&quot;select * from schema_name.table_name where columnA = 3&quot;
+
+# Database with more-than-default detail values and connection information in an environment file
+$ python data_profiling/profile-data.py --max-detail=40 --env=/path/to/env/file \
+&quot;select columnA, columnC, columnJ from table_name&quot;
+</pre></div>
+</div>
+</section>
+</section>
+<section id="example-results-for-restaurant-data">
+<h2>Example results for restaurant data<a class="headerlink" href="#example-results-for-restaurant-data" title="Link to this heading"></a></h2>
+<p>The results will be an <code class="docutils literal notranslate"><span class="pre">.zip</span></code> archive in your current directory.</p>
+<p>The results posted below are based on Los Angeles restaurant inspection data I downloaded from https://www.kaggle.com.
+The URL at that time was https://www.kaggle.com/datasets/cityofLA/la-restaurant-market-health-data.</p>
+<p>The program generates a zip file containing:</p>
+<ul class="simple">
+<li><p>Excel workbook containing multiple sheets:</p>
+<ul>
+<li><p>Summary.</p></li>
+<li><p>A detail analysis sheet and a pattern analysis sheet for each string column in the data source.</p></li>
+<li><p>Distribution plots for each date and numeric column in the data source.</p></li>
+</ul>
+</li>
+</ul>
+<p>This is an example summary:
+<img alt="Summary" src="_images/summary.png" />
+Let’s focus on the highlighted cells.</p>
+<ul class="simple">
+<li><p>C6, C19: these are likely data quality issues. As a percentage of the total data set can be ignored.</p></li>
+<li><p>F2: <code class="docutils literal notranslate"><span class="pre">serial_number</span></code> is unique. Good.</p></li>
+<li><p>G4: The most common <code class="docutils literal notranslate"><span class="pre">facility_name</span></code> for restaurants is “DODGER_STADIUM”. That’s odd.</p></li>
+<li><p>G16: And yet the most common <code class="docutils literal notranslate"><span class="pre">owner_name</span></code> is Ralph’s Grocery CO. Probably https://www.ralphs.com/.</p></li>
+<li><p>L4: The shortest <code class="docutils literal notranslate"><span class="pre">facility_name</span></code> is “ZO”. Probably a data quality issue.</p></li>
+<li><p>M3, Q3: Dates are treated as numeric. They can essentially be thought of as the number of seconds after some date. See also https://www.epochconverter.com/ for Linux. Windows has a <a class="reference external" href="https://devblogs.microsoft.com/oldnewthing/20090306-00/?p=18913">similar concept</a>.</p></li>
+<li><p>N5, O5, P5: 50% of the scores were between 91 and 96.</p></li>
+<li><p>M7, M18: the program treats numbers as measurements, even though for these columns the numbers are just IDs. Perhaps more sophisticated code could do better.</p></li>
+</ul>
+<p>Now, details by column.</p>
+<section id="score">
+<h3>score<a class="headerlink" href="#score" title="Link to this heading"></a></h3>
+<p><img alt="score.distribution" src="_images/score.distribution.png" /></p>
+<ul class="simple">
+<li><p>As a first estimate I would have guessed this would look like a Bell curve, perhaps with a bit of <a class="reference external" href="https://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm">skew</a>.</p></li>
+<li><p>Instead, we many more scores of 90 than expected and much fewer scores of 89 than expected (and fewer in the 80s than expected).</p></li>
+<li><p>Without proof I would guess:</p>
+<ul>
+<li><p>A score of 90-100 yields a sign in the restaurant window with the letter A.</p></li>
+<li><p>A score of 80-89 yields a sign in the restaurant window with the letter B.</p></li>
+<li><p>People don’t like to eat at restaurants which fail to achieve an A-rating.</p></li>
+<li><p>Restaurant owners, and to a lesser extent restaurant inspectors, strive to avoid anything other than an A-rating. (Image below courtesy of https://la.eater.com/2015/8/19/9178907/la-county-health-department-restaurant-grades-need-overhaul.)</p></li>
+</ul>
+</li>
+</ul>
+<p><img alt="restaurant_rating_in_window" src="_images/restaurant_rating_in_window.png" /></p>
+</section>
+<section id="employee-id">
+<h3>employee_id<a class="headerlink" href="#employee-id" title="Link to this heading"></a></h3>
+<p><img alt="employee_id.categorical" src="_images/employee_id.categorical.png" /></p>
+<p><img alt="employee_id_detail" src="_images/employee_id_detail.png" /></p>
+<ul class="simple">
+<li><p>One employee (EE0000721) among the 143 who performed inspections handled one out of every fourteen inspections. And it was twice as many as the next busiest inspector. Why?</p></li>
+</ul>
+</section>
+<section id="activity-date">
+<h3>activity_date<a class="headerlink" href="#activity-date" title="Link to this heading"></a></h3>
+<p><img alt="activity_date_detail" src="_images/activity_date_detail.png" /></p>
+<ul class="simple">
+<li><p>Note the dates with very few inspections (F2, F3, F4 …). These are Saturdays and Sundays. It makes sense inspectors (city staff) don’t work as much on weekends.</p></li>
+</ul>
+</section>
+<section id="facility-name">
+<h3>facility_name<a class="headerlink" href="#facility-name" title="Link to this heading"></a></h3>
+<p><img alt="facility_name_detail" src="_images/facility_name_detail.png" /></p>
+<ul class="simple">
+<li><p>Again, “DODGER STADIUM” leads the way. Are there more restaurants in Dodger Stadium than there are Subway restaurants in all of Los Angeles?</p></li>
+</ul>
+</section>
+<section id="owner-name">
+<h3>owner_name<a class="headerlink" href="#owner-name" title="Link to this heading"></a></h3>
+<p><img alt="owner_name_detail" src="_images/owner_name_detail.png" /></p>
+<ul class="simple">
+<li><p>Note the yellow-highlighted cells. This looks to be a data-quality issue … Levy Premium Food listed twice. When added together this would be the top owner, not Ralph’s.</p></li>
+<li><p>Note the blue-highlighted cells. Is true there are only 50% more Starbucks than Whole Foods?</p></li>
+</ul>
+</section>
+<section id="service-description">
+<h3>service_description<a class="headerlink" href="#service-description" title="Link to this heading"></a></h3>
+<p><img alt="service_description_detail" src="_images/service_description_detail.png" /></p>
+<ul class="simple">
+<li><p>Only 1.65% of inspections were initiated by the owner. Probably makes sense.</p></li>
+<li><p>All inspections are some variation of “routine”, apparently.</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="potential-improvements">
+<h1>Potential improvements<a class="headerlink" href="#potential-improvements" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p>Generate better plots. It is difficult to generate useful plots.</p>
+<ul>
+<li><p>For example, you might want a categorical plot for character data, but if the column contains customer names then every name will appear (roughly) one time.</p></li>
+<li><p>Or, you might want a histogram for numeric or datetime data, but if the column is a primary key, or a created timestamp generated by a trigger, then again each value will appear (almost always) one time.</p></li>
+<li><p>Allow specification of plot visual effects.</p></li>
+</ul>
+</li>
+<li><p>When reading from a file:</p>
+<ul>
+<li><p>Allow the specification of unusual, but known, datetime formats.</p></li>
+<li><p>Allow the specification of columns to exclude, or include.</p></li>
+</ul>
+</li>
 </ul>
 </section>
 
