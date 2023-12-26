@@ -1,27 +1,7 @@
-<!-- TOC start -->
-- [Overview](#overview)
-    * [What this program does not do](#what-this-program-does-not-do)
-- [Usage](#usage)
-    * [Installation](#installation)
-    * [Data preparation](#data-preparation)
-        - [CSV file](#csv-file)
-        - [Database](#database)
-            * [Environment file](#environment-file)
-    * [Execution](#execution)
-        - [A note about sampling](#a-note-about-sampling)
-            * [How to specify sampling](#how-to-specify-sampling)
-        - [Examples](#examples)
-    * [Example results for restaurant data](#example-results-for-restaurant-data)
-        - [score](#score)
-        - [employee_id](#employee_id)
-        - [activity_date](#activity_date)
-        - [facility_name](#facility_name)
-        - [owner_name](#owner_name)
-        - [service_description](#service_description)
-- [Potential improvements](#potential-improvements)
-<!-- TOC end -->
+# API
 
-<!-- TOC --><a name="overview"></a>
+<a href="data_profiling.html">data_profiling API</a>
+
 # Overview
 The idea for this code came from my time managing a team of data analysts for an internal audit department of a large company.
 
@@ -31,17 +11,14 @@ So, now you've got potentially a lot of data ... where do you tell your auditors
 
 That's what this program does.
 
-<!-- TOC --><a name="what this program does not do"></a>
 ## What this program does not do
 
 This is not artificial intelligence or machine learning. It _is_ useful statistics which allows a subject-matter expert, or even a well-read person, to quickly spot potential anomalies in a set of data which is otherwise too large to comprehend.
 
 The anomalies can be incorrect measurements or evidence of a process which is not working as designed or expected. Follow-up, in the form of questions to the data producer, or to the owner or administrator of the underlying process, will likely be required.
 
-<!-- TOC --><a name="usage"></a>
 # Usage
 
-<!-- TOC --><a name="installation"></a>
 ## Installation
 - `git clone https://github.com/jsf80238/data_profiling.git`
 - `cd data_profiling`
@@ -49,14 +26,11 @@ The anomalies can be incorrect measurements or evidence of a process which is no
 - `source your_dir/bin/activate`  # or on Windows `your_dir\Scripts\activate.bat`
 - `pip install -r requirements.txt`
 
-<!-- TOC --><a name="data preparation"></a>
 ## Data preparation
 
-<!-- TOC --><a name="csv file"></a>
 ### CSV file
 Download to a suitable location.
 
-<!-- TOC --><a name="database"></a>
 ### Database
 The program will theoretically support any database with a JDBC driver.
 PostgreSQL and Microsoft SQL drivers are included.
@@ -68,7 +42,6 @@ To support another database:
   - Add the name of the JDBC jar file.
   - Add the connection string.
 
-<!-- TOC --><a name="environment file"></a>
 #### Environment file
 You can store your connection credentials in a file or provide them via the command-line.
 
@@ -87,7 +60,6 @@ You can store your connection credentials in a file or provide them via the comm
     # PASSWORD=your-password
 
 
-<!-- TOC --><a name="execution"></a>
 ## Execution
 
     $ export PYTHONPATH="data_profiling:"  # PowerShell:  $env:PYTHONPATH="data_profiling;"
@@ -150,13 +122,11 @@ You can store your connection credentials in a file or provide them via the comm
       -v, --verbose
       -t, --terse
 
-<!-- TOC --><a name="a note about sampling"></a>
 ### A note about sampling
 If your task is to write code which [ETLs](https://en.wikipedia.org/wiki/Extract,_transform,_load) account data for a financial institution then sampling may not be an option ... your code needs to handle every source row it encounters.
 
 For analysis tasks, though, the [Central Limit Theorem](https://www.statisticshowto.com/probability-and-statistics/normal-distributions/central-limit-theorem-definition-examples/) provides really useful results from what intuitively may seem like a small amount of data. See my [StackExchange question](https://math.stackexchange.com/questions/4023389/what-size-sample-do-i-need-to-find-errors-with-a-certain-amount-of-confidence) for a discussion.
 
-<!-- TOC --><a name="how to specify sampling"></a>
 #### How to specify sampling
 - CSV file
   - Use the `--sample-rows-file` option. This will be an absolute number, rather than a percentage, because the confidence interval for a sample is based on the absolute number of rows, not the size of the population. If your file contains fewer rows than the number you specify the program will just analyze every row.
@@ -165,7 +135,6 @@ For analysis tasks, though, the [Central Limit Theorem](https://www.statisticsho
     - For PostgreSQL see `TABLESAMPLE` and `tsm_system_rows`.
     - For Microsoft SQL see `TABLESAMPLE`.
 
-<!-- TOC --><a name="examples"></a>
 ### Examples
 
     # CSV file
@@ -183,7 +152,6 @@ For analysis tasks, though, the [Central Limit Theorem](https://www.statisticsho
     $ python data_profiling/profile-data.py --max-detail=40 --env=/path/to/env/file \
     "select columnA, columnC, columnJ from table_name"
 
-<!-- TOC --><a name="example results for restaurant data"></a>
 ## Example results for restaurant data
 The results will be an `.zip` archive in your current directory.
 
@@ -209,7 +177,6 @@ Let's focus on the highlighted cells.
 - M7, M18: the program treats numbers as measurements, even though for these columns the numbers are just IDs. Perhaps more sophisticated code could do better.
 
 Now, details by column.
-<!-- TOC --><a name="score"></a>
 ### score
 
 ![score.distribution](../images/score.distribution.png)
@@ -224,7 +191,6 @@ Now, details by column.
 
 ![restaurant_rating_in_window](../images/restaurant_rating_in_window.png)
 
-<!-- TOC --><a name="employee_id"></a>
 ### employee_id
 
 ![employee_id.categorical](../images/employee_id.categorical.png)
@@ -233,21 +199,18 @@ Now, details by column.
 
 - One employee (EE0000721) among the 143 who performed inspections handled one out of every fourteen inspections. And it was twice as many as the next busiest inspector. Why?
 
-<!-- TOC --><a name="activity_date"></a>
 ### activity_date
 
 ![activity_date_detail](../images/activity_date_detail.png)
 
 - Note the dates with very few inspections (F2, F3, F4 ...). These are Saturdays and Sundays. It makes sense inspectors (city staff) don't work as much on weekends.
 
-<!-- TOC --><a name="facility_name"></a>
 ### facility_name
 
 ![facility_name_detail](../images/facility_name_detail.png)
 
 - Again, "DODGER STADIUM" leads the way. Are there more restaurants in Dodger Stadium than there are Subway restaurants in all of Los Angeles?
 
-<!-- TOC --><a name="owner_name"></a>
 ### owner_name
 
 ![owner_name_detail](../images/owner_name_detail.png)
@@ -255,7 +218,6 @@ Now, details by column.
 - Note the yellow-highlighted cells. This looks to be a data-quality issue ... Levy Premium Food listed twice. When added together this would be the top owner, not Ralph's.
 - Note the blue-highlighted cells. Is true there are only 50% more Starbucks than Whole Foods?
 
-<!-- TOC --><a name="service_description"></a>
 ### service_description
 
 ![service_description_detail](../images/service_description_detail.png)
@@ -263,7 +225,6 @@ Now, details by column.
 - Only 1.65% of inspections were initiated by the owner. Probably makes sense.
 - All inspections are some variation of "routine", apparently.
 
-<!-- TOC --><a name="potential improvements"></a>
 # Potential improvements
 - Generate better plots. It is difficult to generate useful plots.
   - For example, you might want a categorical plot for character data, but if the column contains customer names then every name will appear (roughly) one time.
