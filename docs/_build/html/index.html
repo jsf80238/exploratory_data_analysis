@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Author &mdash; Data Profiling  documentation</title>
+  <title>Overview &mdash; Data Profiling  documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -44,12 +44,10 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <!-- Local TOC -->
               <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">Author</a><ul>
-<li><a class="reference internal" href="#see-also">See also</a></li>
+<li><a class="reference internal" href="#">Overview</a><ul>
+<li><a class="reference internal" href="#what-this-program-does-not-do">What this program does not do</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#profile-data-py">profile_data.py</a><ul>
-<li><a class="reference internal" href="#overview">Overview</a></li>
 <li><a class="reference internal" href="#usage">Usage</a><ul>
 <li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#data-preparation">Data preparation</a><ul>
@@ -68,7 +66,7 @@
 <li><a class="reference internal" href="#examples">Examples</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#results">Results</a><ul>
+<li><a class="reference internal" href="#example-results-for-restaurant-data">Example results for restaurant data</a><ul>
 <li><a class="reference internal" href="#score">score</a></li>
 <li><a class="reference internal" href="#employee-id">employee_id</a></li>
 <li><a class="reference internal" href="#activity-date">activity_date</a></li>
@@ -80,8 +78,6 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#potential-improvements">Potential improvements</a></li>
-</ul>
-</li>
 </ul>
 </div>
         </div>
@@ -98,7 +94,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Author</li>
+      <li class="breadcrumb-item active">Overview</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -108,27 +104,71 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="author">
-<h1>Author<a class="headerlink" href="#author" title="Link to this heading"></a></h1>
-<p><a class="reference external" href="https://www.linkedin.com/in/jasonfriedmantechnology/">Jason Friedman</a> is the author of this code.</p>
-<section id="see-also">
-<h2>See also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
-<p><a class="reference external" href="https://jasonsfriedman.com/docs/_build/html/">Sphinx documentation</a></p>
-</section>
-</section>
-<section id="profile-data-py">
-<h1>profile_data.py<a class="headerlink" href="#profile-data-py" title="Link to this heading"></a></h1>
+  <!-- TOC start -->
+<ul class="simple">
+<li><p><a class="reference internal" href="#overview"><span class="xref myst">Overview</span></a></p>
+<ul>
+<li><p><a class="reference internal" href="#what-this-program-does-not-do"><span class="xref myst">What this program does not do</span></a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#usage"><span class="xref myst">Usage</span></a></p>
+<ul>
+<li><p><a class="reference internal" href="#installation"><span class="xref myst">Installation</span></a></p></li>
+<li><p><a class="reference internal" href="#data-preparation"><span class="xref myst">Data preparation</span></a></p>
+<ul>
+<li><p><a class="reference internal" href="#csv-file"><span class="xref myst">CSV file</span></a></p></li>
+<li><p><a class="reference internal" href="#database"><span class="xref myst">Database</span></a></p>
+<ul>
+<li><p><a class="reference internal" href="#environment-file"><span class="xref myst">Environment file</span></a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#execution"><span class="xref myst">Execution</span></a></p>
+<ul>
+<li><p><a class="reference internal" href="#a-note-about-sampling"><span class="xref myst">A note about sampling</span></a></p>
+<ul>
+<li><p><a class="reference internal" href="#how-to-specify-sampling"><span class="xref myst">How to specify sampling</span></a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#examples"><span class="xref myst">Examples</span></a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#example-results-for-restaurant-data"><span class="xref myst">Example results for restaurant data</span></a></p>
+<ul>
+<li><p><a class="reference internal" href="#score"><span class="xref myst">score</span></a></p></li>
+<li><p><a class="reference internal" href="#employee_id"><span class="xref myst">employee_id</span></a></p></li>
+<li><p><a class="reference internal" href="#activity_date"><span class="xref myst">activity_date</span></a></p></li>
+<li><p><a class="reference internal" href="#facility_name"><span class="xref myst">facility_name</span></a></p></li>
+<li><p><a class="reference internal" href="#owner_name"><span class="xref myst">owner_name</span></a></p></li>
+<li><p><a class="reference internal" href="#service_description"><span class="xref myst">service_description</span></a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#potential-improvements"><span class="xref myst">Potential improvements</span></a></p></li>
+</ul>
+<!-- TOC end -->
+<!-- TOC --><a name="overview"></a>
 <section id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<h1>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h1>
 <p>The idea for this code came from my time managing a team of data analysts for an internal audit department of a large company.</p>
 <p>The audit team asks the business for certain data and, depending on the prevailing politics of the organization, may eventually receive such data or the permission necessary to extract it.</p>
 <p>So, now you’ve got potentially a lot of data … where do you tell your auditors to focus? Wouldn’t it be helpful to have a program which quickly identifies interesting things? And by interesting I mean either likely incorrect, or likely correct but pointing to a business failure.</p>
 <p>That’s what this program does.</p>
+<!-- TOC --><a name="what this program does not do"></a>
+<section id="what-this-program-does-not-do">
+<h2>What this program does not do<a class="headerlink" href="#what-this-program-does-not-do" title="Link to this heading"></a></h2>
+<p>This is not artificial intelligence or machine learning. It <em>is</em> useful statistics which allows a subject-matter expert, or even a well-read person, to quickly spot potential anomalies in a set of data which is otherwise too large to comprehend.</p>
+<p>The anomalies can be incorrect measurements or evidence of a process which is not working as designed or expected. Follow-up, in the form of questions to the data producer, or to the owner or administrator of the underlying process, will likely be required.</p>
+<!-- TOC --><a name="usage"></a>
+</section>
 </section>
 <section id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<h1>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h1>
+<!-- TOC --><a name="installation"></a>
 <section id="installation">
-<h3>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h3>
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">https://github.com/jsf80238/data_profiling.git</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">data_profiling</span></code></p></li>
@@ -136,15 +176,18 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">your_dir/bin/activate</span></code>  # or on Windows <code class="docutils literal notranslate"><span class="pre">your_dir\Scripts\activate.bat</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span></code></p></li>
 </ul>
+<!-- TOC --><a name="data preparation"></a>
 </section>
 <section id="data-preparation">
-<h3>Data preparation<a class="headerlink" href="#data-preparation" title="Link to this heading"></a></h3>
+<h2>Data preparation<a class="headerlink" href="#data-preparation" title="Link to this heading"></a></h2>
+<!-- TOC --><a name="csv file"></a>
 <section id="csv-file">
-<h4>CSV file<a class="headerlink" href="#csv-file" title="Link to this heading"></a></h4>
+<h3>CSV file<a class="headerlink" href="#csv-file" title="Link to this heading"></a></h3>
 <p>Download to a suitable location.</p>
+<!-- TOC --><a name="database"></a>
 </section>
 <section id="database">
-<h4>Database<a class="headerlink" href="#database" title="Link to this heading"></a></h4>
+<h3>Database<a class="headerlink" href="#database" title="Link to this heading"></a></h3>
 <p>The program will theoretically support any database with a JDBC driver.
 PostgreSQL and Microsoft SQL drivers are included.
 To support another database:</p>
@@ -159,8 +202,9 @@ To support another database:</p>
 </ul>
 </li>
 </ul>
+<!-- TOC --><a name="environment file"></a>
 <section id="environment-file">
-<h5>Environment file<a class="headerlink" href="#environment-file" title="Link to this heading"></a></h5>
+<h4>Environment file<a class="headerlink" href="#environment-file" title="Link to this heading"></a></h4>
 <p>You can store your connection credentials in a file or provide them via the command-line.</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ cat /tmp/env
 
@@ -177,11 +221,12 @@ PASSWORD=your-password
 # PASSWORD=your-password
 </pre></div>
 </div>
+<!-- TOC --><a name="execution"></a>
 </section>
 </section>
 </section>
 <section id="execution">
-<h3>Execution<a class="headerlink" href="#execution" title="Link to this heading"></a></h3>
+<h2>Execution<a class="headerlink" href="#execution" title="Link to this heading"></a></h2>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ export PYTHONPATH=&quot;data_profiling:&quot;  # PowerShell:  $env:PYTHONPATH=&quot;data_profiling;&quot;
 
 $ python data_profiling/profile-data.py -h
@@ -243,12 +288,14 @@ options:
   -t, --terse
 </pre></div>
 </div>
+<!-- TOC --><a name="a note about sampling"></a>
 <section id="a-note-about-sampling">
-<h4>A note about sampling<a class="headerlink" href="#a-note-about-sampling" title="Link to this heading"></a></h4>
+<h3>A note about sampling<a class="headerlink" href="#a-note-about-sampling" title="Link to this heading"></a></h3>
 <p>If your task is to write code which <a class="reference external" href="https://en.wikipedia.org/wiki/Extract,_transform,_load">ETLs</a> account data for a financial institution then sampling may not be an option … your code needs to handle every source row it encounters.</p>
 <p>For analysis tasks, though, the <a class="reference external" href="https://www.statisticshowto.com/probability-and-statistics/normal-distributions/central-limit-theorem-definition-examples/">Central Limit Theorem</a> provides really useful results from what intuitively may seem like a small amount of data. See my <a class="reference external" href="https://math.stackexchange.com/questions/4023389/what-size-sample-do-i-need-to-find-errors-with-a-certain-amount-of-confidence">StackExchange question</a> for a discussion.</p>
+<!-- TOC --><a name="how to specify sampling"></a>
 <section id="how-to-specify-sampling">
-<h5>How to specify sampling<a class="headerlink" href="#how-to-specify-sampling" title="Link to this heading"></a></h5>
+<h4>How to specify sampling<a class="headerlink" href="#how-to-specify-sampling" title="Link to this heading"></a></h4>
 <ul class="simple">
 <li><p>CSV file</p>
 <ul>
@@ -266,10 +313,11 @@ options:
 </ul>
 </li>
 </ul>
+<!-- TOC --><a name="examples"></a>
 </section>
 </section>
 <section id="examples">
-<h4>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h4>
+<h3>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h3>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span># CSV file
 $ python data_profiling/profile-data.py /path/to/data.csv
 
@@ -286,10 +334,11 @@ $ python data_profiling/profile-data.py --max-detail=40 --env=/path/to/env/file 
 &quot;select columnA, columnC, columnJ from table_name&quot;
 </pre></div>
 </div>
+<!-- TOC --><a name="example results for restaurant data"></a>
 </section>
 </section>
-<section id="results">
-<h3>Results<a class="headerlink" href="#results" title="Link to this heading"></a></h3>
+<section id="example-results-for-restaurant-data">
+<h2>Example results for restaurant data<a class="headerlink" href="#example-results-for-restaurant-data" title="Link to this heading"></a></h2>
 <p>The results will be an <code class="docutils literal notranslate"><span class="pre">.zip</span></code> archive in your current directory.</p>
 <p>The results posted below are based on Los Angeles restaurant inspection data I downloaded from https://www.kaggle.com.
 The URL at that time was https://www.kaggle.com/datasets/cityofLA/la-restaurant-market-health-data.</p>
@@ -298,12 +347,8 @@ The URL at that time was https://www.kaggle.com/datasets/cityofLA/la-restaurant-
 <li><p>Excel workbook containing multiple sheets:</p>
 <ul>
 <li><p>Summary.</p></li>
-<li><p>Detail, one sheet per column in the data source.</p></li>
-</ul>
-</li>
-<li><p>Images folder:</p>
-<ul>
-<li><p>One image per column, either a categorical plot or distrbution plot depending on which the program thinks would be most helpful.</p></li>
+<li><p>A detail analysis sheet and a pattern analysis sheet for each string column in the data source.</p></li>
+<li><p>Distribution plots for each date and numeric column in the data source.</p></li>
 </ul>
 </li>
 </ul>
@@ -321,8 +366,9 @@ Let’s focus on the highlighted cells.</p>
 <li><p>M7, M18: the program treats numbers as measurements, even though for these columns the numbers are just IDs. Perhaps more sophisticated code could do better.</p></li>
 </ul>
 <p>Now, details by column.</p>
+<!-- TOC --><a name="score"></a>
 <section id="score">
-<h4>score<a class="headerlink" href="#score" title="Link to this heading"></a></h4>
+<h3>score<a class="headerlink" href="#score" title="Link to this heading"></a></h3>
 <p><img alt="score.distribution" src="_images/score.distribution.png" /></p>
 <ul class="simple">
 <li><p>As a first estimate I would have guessed this would look like a Bell curve, perhaps with a bit of <a class="reference external" href="https://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm">skew</a>.</p></li>
@@ -337,49 +383,55 @@ Let’s focus on the highlighted cells.</p>
 </li>
 </ul>
 <p><img alt="restaurant_rating_in_window" src="_images/restaurant_rating_in_window.png" /></p>
+<!-- TOC --><a name="employee_id"></a>
 </section>
 <section id="employee-id">
-<h4>employee_id<a class="headerlink" href="#employee-id" title="Link to this heading"></a></h4>
+<h3>employee_id<a class="headerlink" href="#employee-id" title="Link to this heading"></a></h3>
 <p><img alt="employee_id.categorical" src="_images/employee_id.categorical.png" /></p>
 <p><img alt="employee_id_detail" src="_images/employee_id_detail.png" /></p>
 <ul class="simple">
 <li><p>One employee (EE0000721) among the 143 who performed inspections handled one out of every fourteen inspections. And it was twice as many as the next busiest inspector. Why?</p></li>
 </ul>
+<!-- TOC --><a name="activity_date"></a>
 </section>
 <section id="activity-date">
-<h4>activity_date<a class="headerlink" href="#activity-date" title="Link to this heading"></a></h4>
+<h3>activity_date<a class="headerlink" href="#activity-date" title="Link to this heading"></a></h3>
 <p><img alt="activity_date_detail" src="_images/activity_date_detail.png" /></p>
 <ul class="simple">
 <li><p>Note the dates with very few inspections (F2, F3, F4 …). These are Saturdays and Sundays. It makes sense inspectors (city staff) don’t work as much on weekends.</p></li>
 </ul>
+<!-- TOC --><a name="facility_name"></a>
 </section>
 <section id="facility-name">
-<h4>facility_name<a class="headerlink" href="#facility-name" title="Link to this heading"></a></h4>
+<h3>facility_name<a class="headerlink" href="#facility-name" title="Link to this heading"></a></h3>
 <p><img alt="facility_name_detail" src="_images/facility_name_detail.png" /></p>
 <ul class="simple">
 <li><p>Again, “DODGER STADIUM” leads the way. Are there more restaurants in Dodger Stadium than there are Subway restaurants in all of Los Angeles?</p></li>
 </ul>
+<!-- TOC --><a name="owner_name"></a>
 </section>
 <section id="owner-name">
-<h4>owner_name<a class="headerlink" href="#owner-name" title="Link to this heading"></a></h4>
+<h3>owner_name<a class="headerlink" href="#owner-name" title="Link to this heading"></a></h3>
 <p><img alt="owner_name_detail" src="_images/owner_name_detail.png" /></p>
 <ul class="simple">
-<li><p>Note the yellow-highlighted cells. This looks to be a data-quality issue .. Levy Premium Food listed twice. When added together this would be the top owner, not Ralph’s.</p></li>
+<li><p>Note the yellow-highlighted cells. This looks to be a data-quality issue … Levy Premium Food listed twice. When added together this would be the top owner, not Ralph’s.</p></li>
 <li><p>Note the blue-highlighted cells. Is true there are only 50% more Starbucks than Whole Foods?</p></li>
 </ul>
+<!-- TOC --><a name="service_description"></a>
 </section>
 <section id="service-description">
-<h4>service_description<a class="headerlink" href="#service-description" title="Link to this heading"></a></h4>
+<h3>service_description<a class="headerlink" href="#service-description" title="Link to this heading"></a></h3>
 <p><img alt="service_description_detail" src="_images/service_description_detail.png" /></p>
 <ul class="simple">
 <li><p>Only 1.65% of inspections were initiated by the owner. Probably makes sense.</p></li>
 <li><p>All inspections are some variation of “routine”, apparently.</p></li>
 </ul>
+<!-- TOC --><a name="potential improvements"></a>
 </section>
 </section>
 </section>
 <section id="potential-improvements">
-<h2>Potential improvements<a class="headerlink" href="#potential-improvements" title="Link to this heading"></a></h2>
+<h1>Potential improvements<a class="headerlink" href="#potential-improvements" title="Link to this heading"></a></h1>
 <ul class="simple">
 <li><p>Generate better plots. It is difficult to generate useful plots.</p>
 <ul>
@@ -395,7 +447,6 @@ Let’s focus on the highlighted cells.</p>
 </ul>
 </li>
 </ul>
-</section>
 </section>
 
 
