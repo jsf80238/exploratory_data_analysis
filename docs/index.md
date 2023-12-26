@@ -1,32 +1,24 @@
-<!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
-
+<!-- TOC start -->
 - [Overview](#overview)
+    * [What this program does not do](#what-this-program-does-not-do)
 - [Usage](#usage)
-   * [Installation](#installation)
-   * [Data preparation](#data-preparation)
-      + [CSV file](#csv-file)
-      + [Database](#database)
-         - [Environment file](#environment-file)
-   * [Execution](#execution)
-      + [A note about sampling](#a-note-about-sampling)
-         - [How to specify sampling](#how-to-specify-sampling)
-      + [Examples](#examples)
-   * [Results](#results)
-      + [score](#score)
-      + [employee_id](#employee_id)
-      + [activity_date](#activity_date)
-      + [facility_name](#facility_name)
-      + [owner_name](#owner_name)
-      + [service_description](#service_description)
+    * [Installation](#installation)
+    * [Data preparation](#data-preparation)
+        - [CSV file](#csv-file)
+        - [Database](#database)
+            * [Environment file](#environment-file)
+    * [Execution](#execution)
+        - [A note about sampling](#a-note-about-sampling)
+            * [How to specify sampling](#how-to-specify-sampling)
+        - [Examples](#examples)
+    * [Example results for restaurant data](#example-results-for-restaurant-data)
+        - [score](#score)
+        - [employee_id](#employee_id)
+        - [activity_date](#activity_date)
+        - [facility_name](#facility_name)
+        - [owner_name](#owner_name)
+        - [service_description](#service_description)
 - [Potential improvements](#potential-improvements)
-
-
-- level 1
-    * level 2
-        + level 3
-           - level 4
-
-
 <!-- TOC end -->
 
 <!-- TOC --><a name="overview"></a>
@@ -39,6 +31,13 @@ So, now you've got potentially a lot of data ... where do you tell your auditors
 
 That's what this program does.
 
+<!-- TOC --><a name="what this program does not do"></a>
+## What this program does not do
+
+This is not artificial intelligence or machine learning. It _is_ useful statistics which allows a subject-matter expert, or even a well-read person, to quickly spot potential anomalies in a set of data which is otherwise too large to comprehend.
+
+The anomalies can be incorrect measurements or evidence of a process which is not working as designed or expected. Follow-up, in the form of questions to the data producer, or to the owner or administrator of the underlying process, will likely be required.
+
 <!-- TOC --><a name="usage"></a>
 # Usage
 
@@ -50,10 +49,10 @@ That's what this program does.
 - `source your_dir/bin/activate`  # or on Windows `your_dir\Scripts\activate.bat`
 - `pip install -r requirements.txt`
 
-<!-- TOC --><a name="data-preparation"></a>
+<!-- TOC --><a name="data preparation"></a>
 ## Data preparation
 
-<!-- TOC --><a name="csv-file"></a>
+<!-- TOC --><a name="csv file"></a>
 ### CSV file
 Download to a suitable location.
 
@@ -69,7 +68,7 @@ To support another database:
   - Add the name of the JDBC jar file.
   - Add the connection string.
 
-<!-- TOC --><a name="environment-file"></a>
+<!-- TOC --><a name="environment file"></a>
 #### Environment file
 You can store your connection credentials in a file or provide them via the command-line.
 
@@ -101,15 +100,15 @@ You can store your connection credentials in a file or provide them via the comm
                            [--max-detail-values NUM] [--max-pattern-length NUM]
                            [--output-dir /path/to/dir] [-v | -t]
                            /path/to/input_data_file.csv | query-against-database
-    
+
     Profile the data in a database or CSV file. Generates an analysis consisting of an Excel
     workbook and (optionally) one or more images. For string columns provides a pattern
     analysis with C replacing letters, 9 replacing numbers, underscore replacing spaces, and
     question mark replacing everything else.
-    
+
     positional arguments:
       /path/to/input_data_file.csv | query-against-database
-    
+
     options:
       -h, --help            show this help message and exit
       --db-host-name HOST_NAME
@@ -151,13 +150,13 @@ You can store your connection credentials in a file or provide them via the comm
       -v, --verbose
       -t, --terse
 
-<!-- TOC --><a name="a-note-about-sampling"></a>
+<!-- TOC --><a name="a note about sampling"></a>
 ### A note about sampling
 If your task is to write code which [ETLs](https://en.wikipedia.org/wiki/Extract,_transform,_load) account data for a financial institution then sampling may not be an option ... your code needs to handle every source row it encounters.
 
 For analysis tasks, though, the [Central Limit Theorem](https://www.statisticshowto.com/probability-and-statistics/normal-distributions/central-limit-theorem-definition-examples/) provides really useful results from what intuitively may seem like a small amount of data. See my [StackExchange question](https://math.stackexchange.com/questions/4023389/what-size-sample-do-i-need-to-find-errors-with-a-certain-amount-of-confidence) for a discussion.
 
-<!-- TOC --><a name="how-to-specify-sampling"></a>
+<!-- TOC --><a name="how to specify sampling"></a>
 #### How to specify sampling
 - CSV file
   - Use the `--sample-rows-file` option. This will be an absolute number, rather than a percentage, because the confidence interval for a sample is based on the absolute number of rows, not the size of the population. If your file contains fewer rows than the number you specify the program will just analyze every row.
@@ -184,19 +183,18 @@ For analysis tasks, though, the [Central Limit Theorem](https://www.statisticsho
     $ python data_profiling/profile-data.py --max-detail=40 --env=/path/to/env/file \
     "select columnA, columnC, columnJ from table_name"
 
-<!-- TOC --><a name="results"></a>
-## Results
+<!-- TOC --><a name="example results for restaurant data"></a>
+## Example results for restaurant data
 The results will be an `.zip` archive in your current directory.
 
 The results posted below are based on Los Angeles restaurant inspection data I downloaded from https://www.kaggle.com.
-The URL at that time was https://www.kaggle.com/datasets/cityofLA/la-restaurant-market-health-data. 
+The URL at that time was https://www.kaggle.com/datasets/cityofLA/la-restaurant-market-health-data.
 
 The program generates a zip file containing:
 - Excel workbook containing multiple sheets:
   - Summary.
-  - Detail, one sheet per column in the data source.
-- Images folder:
-  - One image per column, either a categorical plot or distrbution plot depending on which the program thinks would be most helpful.
+  - A detail analysis sheet and a pattern analysis sheet for each string column in the data source.
+  - Distribution plots for each date and numeric column in the data source.
 
 This is an example summary:
 ![Summary](../images/summary.png)
@@ -206,7 +204,7 @@ Let's focus on the highlighted cells.
 - G4: The most common `facility_name` for restaurants is "DODGER_STADIUM". That's odd.
 - G16: And yet the most common `owner_name` is Ralph's Grocery CO. Probably https://www.ralphs.com/.
 - L4: The shortest `facility_name` is "ZO". Probably a data quality issue.
-- M3, Q3: Dates are treated as numeric. They can essentially be thought of as the number of seconds after some date. See also https://www.epochconverter.com/ for Linux. Windows has a [similar concept](https://devblogs.microsoft.com/oldnewthing/20090306-00/?p=18913). 
+- M3, Q3: Dates are treated as numeric. They can essentially be thought of as the number of seconds after some date. See also https://www.epochconverter.com/ for Linux. Windows has a [similar concept](https://devblogs.microsoft.com/oldnewthing/20090306-00/?p=18913).
 - N5, O5, P5: 50% of the scores were between 91 and 96.
 - M7, M18: the program treats numbers as measurements, even though for these columns the numbers are just IDs. Perhaps more sophisticated code could do better.
 
@@ -265,7 +263,7 @@ Now, details by column.
 - Only 1.65% of inspections were initiated by the owner. Probably makes sense.
 - All inspections are some variation of "routine", apparently.
 
-<!-- TOC --><a name="potential-improvements"></a>
+<!-- TOC --><a name="potential improvements"></a>
 # Potential improvements
 - Generate better plots. It is difficult to generate useful plots.
   - For example, you might want a categorical plot for character data, but if the column contains customer names then every name will appear (roughly) one time.
