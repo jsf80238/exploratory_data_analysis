@@ -41,6 +41,8 @@ DATATYPE_SAMPLING_SIZE = 500
 # Plotting visual effects
 PLOT_SIZE_X, PLOT_SIZE_Y = 11, 8.5
 PLOT_FONT_SCALE = 0.75
+# Good character for histograms U+25A0
+BLACK_SQUARE = "■"
 
 DATATYPE_MAPPING_DICT = {
     "BIGINT": NUMBER,
@@ -138,11 +140,15 @@ def convert_str_to_datetime(value: str) -> datetime:
         return None
 
 
-def truncate_string(s: str, max_length: int, filler: str = "...") -> str:
+def make_sheet_name(s: str, max_length: int, filler: str = "...") -> str:
     """
-    For example, truncate_string("Hello world!", 7) returns:
+    For example, make_sheet_name("Hello world!", 7) returns:
     "Hell..."
     """
+    # Remove []:*?/\ as these are not valid for sheet names
+    illegal_chars = "[]:*?/\\"
+    translation_map = str.maketrans(illegal_chars, "_"*len(illegal_chars))
+    s = s.translate(translation_map)
     excess_count = len(s) - max_length
     if excess_count <= 0:
         return s
@@ -281,9 +287,9 @@ if __name__ == "__main__":
         raise Exception("Programming error.")
 
     if args.verbose:
-        logger = Logger().get_logger("DEBUG")
+        logger = Logger("DEBUG").get_logger()
     elif args.terse:
-        logger = Logger().get_logger("WARNING")
+        logger = Logger("WARNING").get_logger()
     else:
         logger = Logger().get_logger()
 
@@ -411,14 +417,14 @@ if __name__ == "__main__":
     detail_dict = dict()  # Each element to be converted into a detail worksheet
     pattern_dict = dict()  # For each string column calculate the frequency of patterns
     for column_name, values in data_dict.items():  # values is a list of the sample values for this column
+        if False and column_name != 'PRI_Reported Brand/Product Name':  # For testing
+            continue
         if not len(values):
             logger.critical(f"There is no data in '{input_path+input_query}'.")
             exit()
         datatype = datatype_dict[column_name]
         # A list of non-null values are useful for some calculations below
         non_null_values = non_null_data_dict[column_name]
-        if False and column_name != 'DEFAULT_CODE':
-            continue
         datatype = datatype_dict[column_name]
         logger.info(f"Working on column '{column_name}' ...")
         column_dict = dict.fromkeys(ANALYSIS_LIST)
@@ -482,6 +488,7 @@ if __name__ == "__main__":
             detail_df["value"] = [x[0] for x in most_common_list]
             detail_df["count"] = [x[1] for x in most_common_list]
             detail_df["%total"] = [round(x[1] * 100 / row_count, ROUNDING) for x in most_common_list]
+            detail_df["histogram"] = [BLACK_SQUARE * (1 + int(x[1] * 100 / row_count)) for x in most_common_list]
             detail_dict[column_name] = detail_df
         else:
             logger.warning(f"Column '{column_name}' is empty.")
@@ -525,12 +532,15 @@ if __name__ == "__main__":
     result_df.to_excel(writer, sheet_name="Summary")
     # And generate a detail sheet, and optionally a pattern sheet, for each column
     for column_name, detail_df in detail_dict.items():
-        logger.info(f"Writing detail for column '{column_name}' ...")
-        detail_df.to_excel(writer, index=False, sheet_name=truncate_string(column_name + " detail", MAX_SHEET_NAME_LENGTH))
+        logger.debug(f"Examining column '{column_name}' ...")
+        target_sheet_name = make_sheet_name(column_name, MAX_SHEET_NAME_LENGTH-4) + " det"
+        logger.info(f"Writing detail for column '{column_name}' to sheet '{target_sheet_name}' ...")
+        detail_df.to_excel(writer, index=False, sheet_name=target_sheet_name)
         if column_name in pattern_dict:
-            logger.info(f"Writing pattern detail for string column '{column_name}' ...")
+            target_sheet_name = make_sheet_name(column_name, MAX_SHEET_NAME_LENGTH-4) + " pat"
+            logger.info(f"Writing pattern detail for string column '{column_name}' to sheet '{target_sheet_name}' ...")
             pattern_df = pattern_dict[column_name]
-            pattern_df.to_excel(writer, index=False, sheet_name=truncate_string(column_name + " pattern", MAX_SHEET_NAME_LENGTH))
+            pattern_df.to_excel(writer, index=False, sheet_name=target_sheet_name)
     writer.close()
 
     # Add the plots and size bars to the Excel file
