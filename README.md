@@ -1,1 +1,1 @@
-**[Read The Docs](https://data-profiling.readthedocs.io/)**
+[This content has moved](https://github.com/jsf80238/data_science).
